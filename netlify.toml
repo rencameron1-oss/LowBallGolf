@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # The TinaCMS local build exceeds Node's default 2GB heap during indexing.
+  NODE_OPTIONS = "--max-old-space-size=6144"

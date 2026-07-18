@@ -49,7 +49,16 @@ const contactIntro = getSiteSettings().contact_intro;
         </div>
       )}
 
-      <form class="contact-form reveal reveal-delay-2" data-contact-form novalidate>
+      <form
+        class="contact-form reveal reveal-delay-2"
+        name="contact"
+        method="POST"
+        data-netlify="true"
+        data-netlify-honeypot="website"
+        data-contact-form
+        novalidate
+      >
+        <input type="hidden" name="form-name" value="contact" />
         <div class="contact-form__row">
           <label class="contact-form__field">
             <span>Your name</span>
@@ -184,30 +193,23 @@ const contactIntro = getSiteSettings().contact_intro;
       event.preventDefault();
       const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
       const formData = new FormData(form);
-      const payload = {
-        name: String(formData.get('name') || ''),
-        email: String(formData.get('email') || ''),
-        subject: String(formData.get('subject') || ''),
-        message: String(formData.get('message') || ''),
-        website: String(formData.get('website') || ''),
-      };
+      const body = new URLSearchParams(formData as unknown as Record<string, string>).toString();
 
       status.dataset.state = '';
       status.textContent = 'Sending…';
       if (submit) submit.disabled = true;
 
       try {
-        const res = await fetch('/api/contact', {
+        // Netlify Forms accepts AJAX submissions as a urlencoded POST to any
+        // path on the site; form-name routes it to the right form.
+        const res = await fetch('/', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body,
         });
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
         if (!res.ok) {
           status.dataset.state = 'error';
-          status.textContent = data.error
-            ? `Could not send: ${data.error}`
-            : 'Could not send. Please try again.';
+          status.textContent = 'Could not send. Please try again.';
           return;
         }
         status.dataset.state = 'ok';

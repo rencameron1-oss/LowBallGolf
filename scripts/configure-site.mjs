@@ -56,11 +56,10 @@ console.log('\nConfigure Agentic Site Starter\n');
 const siteName = await ask('Site name', 'My New Site');
 const wordmark = await ask('Logo text', siteName);
 const tagline = await ask('Short tagline', 'A clear website built with an AI coding agent');
-const description = await ask('SEO description', `${siteName} is a modern editable website built with Astro, TinaCMS, GitHub and Cloudflare.`);
+const description = await ask('SEO description', `${siteName} is a modern editable website built with Astro, TinaCMS, GitHub and Netlify.`);
 const domain = ensureUrl(await ask('Public site URL or domain', 'https://example.com'));
 const email = await ask('Contact email', 'hello@example.com');
 const location = await ask('Location text', 'Melbourne, Australia');
-const workerName = slugify(await ask('Cloudflare Worker name', slugify(siteName)));
 const packageName = slugify(siteName);
 
 rl.close();
@@ -79,7 +78,7 @@ write('src/config/site.ts', siteConfig);
 const settings = JSON.parse(read('src/content/site_settings/main.json'));
 settings.location = location;
 settings.contact_intro = `Use this page for enquiries about ${siteName}.`;
-settings.footer_note = `${siteName}. Built with Astro, TinaCMS, GitHub and Cloudflare.`;
+settings.footer_note = `${siteName}. Built with Astro, TinaCMS, GitHub and Netlify.`;
 settings.brand.logo_text = wordmark;
 settings.brand.logo_initials = initialsFromName(wordmark);
 write('src/content/site_settings/main.json', `${JSON.stringify(settings, null, 2)}\n`);
@@ -87,10 +86,6 @@ write('src/content/site_settings/main.json', `${JSON.stringify(settings, null, 2
 let astroConfig = read('astro.config.mjs');
 astroConfig = astroConfig.replace(/PUBLIC_SITE_URL \|\| '[^']*'/, `PUBLIC_SITE_URL || ${jsString(domain)}`);
 write('astro.config.mjs', astroConfig);
-
-let wrangler = read('wrangler.jsonc');
-wrangler = wrangler.replace(/"name":\s*"[^"]*"/, `"name": "${workerName}"`);
-write('wrangler.jsonc', wrangler);
 
 let robots = read('public/robots.txt');
 robots = robots.replace(/Sitemap:\s*.*/, `Sitemap: ${domain.replace(/\/$/, '')}/sitemap-index.xml`);

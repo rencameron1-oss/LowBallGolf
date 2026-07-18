@@ -1,4 +1,4 @@
-# Cloudflare Pages / Workers redirects file.
+# Netlify redirects file.
 # Add your own redirects here, one per line, in this format:
 #   /old-path/   /new-path/   301
 #

@@ -16,7 +16,7 @@ const tinaAdminProxy = isLocalTinaDev
 
 // https://astro.build/config
 export default defineConfig({
-  site: process.env.PUBLIC_SITE_URL || 'https://example.com',
+  site: process.env.PUBLIC_SITE_URL || "https://lowballgolf.com.au",
   output: 'static',
   server: {
     host: '0.0.0.0', // Expose on network

@@ -36,19 +36,19 @@ export interface SiteConfig {
 }
 
 const siteConfig: SiteConfig = {
-  name: 'Agentic Site Starter',
-  tagline: 'A clean, editable website starter for people learning to build with AI coding agents.',
+  name: "LowballGolf",
+  tagline: "A clear website built with an AI coding agent",
   description:
-    'Agentic Site Starter is a transportable Astro and TinaCMS website template designed for novice creators using GitHub, Cloudflare, and AI coding agents.',
-  url: 'https://example.com',
+    "LowballGolf is a modern editable website built with Astro, TinaCMS, GitHub and Netlify.",
+  url: "https://lowballgolf.com.au",
   locale: 'en-AU',
   timezone: 'Australia/Melbourne',
   logo: {
     icon: '/favicon.svg',
-    wordmark: 'Agentic Starter',
+    wordmark: "LowballGolf",
   },
   social: {
-    email: 'hello@example.com',
+    email: "rencameron@lowballgolf.com.au",
   },
   theme: {
     primaryColor: '#f5f1e8',
@@ -57,10 +57,10 @@ const siteConfig: SiteConfig = {
   booking: {
     ctaText: 'Start Editing',
     ctaUrl: '/contact',
-    emailSubject: 'Website enquiry',
+    emailSubject: "Enquiry from LowballGolf",
   },
   seo: {
-    titleTemplate: '%s | Agentic Site Starter',
+    titleTemplate: "%s | LowballGolf",
     defaultOgImage: '/images/starter-hero.png',
   },
 };

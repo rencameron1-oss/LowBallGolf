@@ -1,0 +1,23 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import TestimonialCard from './TestimonialCard.astro';
+
+interface Props {
+  testimonials: CollectionEntry<'testimonials'>[];
+}
+
+const { testimonials } = Astro.props;
+---
+
+<div class="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 scrollbar-hide">
+  {testimonials.map((testimonial) => (
+    <div class="flex-shrink-0 w-[320px] md:w-[380px] snap-start">
+      <TestimonialCard testimonial={testimonial} />
+    </div>
+  ))}
+</div>
+
+<style>
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+</style>

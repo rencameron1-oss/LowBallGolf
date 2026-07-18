@@ -1,0 +1,19 @@
+{
+  "name": "@bands/ui",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "description": "Shared Astro + TinaCMS components and schema fragments for the 4 Bands sites",
+  "license": "MIT",
+  "author": "Michael Smedley",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tina": "./src/tina/index.ts",
+    "./components/*": "./src/components/*",
+    "./utils/*": "./src/utils/*",
+    "./utils/*.ts": "./src/utils/*.ts"
+  },
+  "files": [
+    "src"
+  ]
+}

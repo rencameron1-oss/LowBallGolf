@@ -1,0 +1,37 @@
+---
+interface Props {
+  size?: 'small' | 'medium' | 'large';
+  style?: 'empty' | 'line' | 'accent-line' | 'dots';
+}
+
+const {
+  size = 'medium',
+  style = 'empty',
+} = Astro.props;
+
+const sizeClasses: Record<string, string> = {
+  small: 'py-6 md:py-8',
+  medium: 'py-12 md:py-16',
+  large: 'py-20 md:py-28',
+};
+---
+
+<div class:list={[sizeClasses[size] || sizeClasses.medium]}>
+  {style === 'line' && (
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <hr class="border-brand-border/30" />
+    </div>
+  )}
+  {style === 'accent-line' && (
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
+      <div class="accent-line"></div>
+    </div>
+  )}
+  {style === 'dots' && (
+    <div class="flex items-center justify-center gap-3">
+      <span class="w-1.5 h-1.5 rounded-full bg-brand-accent/40"></span>
+      <span class="w-1.5 h-1.5 rounded-full bg-brand-accent/60"></span>
+      <span class="w-1.5 h-1.5 rounded-full bg-brand-accent/40"></span>
+    </div>
+  )}
+</div>

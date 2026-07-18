@@ -1,0 +1,53 @@
+---
+import { formatShortDate } from '../../utils/dates';
+
+interface Props {
+  posts: any[];
+  columns?: number;
+  maxPosts?: number;
+}
+
+const { posts, columns = 3, maxPosts = 0 } = Astro.props;
+
+const displayPosts = maxPosts > 0 ? posts.slice(0, maxPosts) : posts;
+
+const colClasses: Record<number, string> = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-1 md:grid-cols-2',
+  3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+  4: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
+};
+
+const gridClass = colClasses[columns] || colClasses[3];
+---
+
+<div class={`grid ${gridClass} gap-6`}>
+  {displayPosts.map((post, i) => (
+    <a href={`/posts/${post.id}`} class={`block group reveal reveal-delay-${Math.min(i, 3)}`}>
+      <div class="bg-brand-surface border border-brand-border/30 rounded-2xl overflow-hidden h-full hover:border-brand-accent/30 transition-all duration-300 hover:-translate-y-1">
+        {post.data.hero_image && (
+          <div class="aspect-[16/10] overflow-hidden">
+            <img
+              src={post.data.hero_image}
+              alt={post.data.title}
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              loading="lazy"
+            />
+          </div>
+        )}
+        <div class="p-6">
+          <p class="text-xs text-brand-muted uppercase tracking-wide">
+            {formatShortDate(post.data.pubDate)}
+            {post.data.category && ` · ${post.data.category.replace('_', ' ')}`}
+          </p>
+          <h2 class="text-lg font-heading font-semibold text-brand-champagne mt-2 group-hover:text-brand-accent transition-colors">
+            {post.data.title}
+          </h2>
+          {post.data.excerpt && (
+            <p class="text-sm text-brand-muted mt-2 line-clamp-3">{post.data.excerpt}</p>
+          )}
+        </div>
+      </div>
+    </a>
+  ))}
+</div>

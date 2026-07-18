@@ -1,0 +1,73 @@
+---
+interface Props {
+  image?: string;
+  image_alt?: string;
+  heading?: string;
+  subheading?: string;
+  overlay?: boolean;
+  parallax?: boolean;
+}
+
+const {
+  image,
+  image_alt = '',
+  heading,
+  subheading,
+  overlay = true,
+  parallax = false,
+} = Astro.props;
+---
+
+<section class="relative min-h-[50vh] flex items-center justify-center overflow-hidden">
+  {image && (
+    <div class:list={['absolute inset-0', parallax && 'will-change-transform']} data-parallax={parallax ? 'true' : undefined}>
+      <img
+        src={image}
+        alt={image_alt}
+        class:list={[
+          'w-full h-full object-cover',
+          parallax && 'scale-110',
+        ]}
+        loading="lazy"
+      />
+      {overlay && (
+        <div class="absolute inset-0 bg-gradient-to-t from-brand-primary/80 via-brand-primary/40 to-brand-primary/20"></div>
+      )}
+    </div>
+  )}
+
+  {(heading || subheading) && (
+    <div class="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto py-20 reveal">
+      {heading && (
+        <h2 class="text-3xl md:text-5xl lg:text-6xl font-heading font-bold text-brand-champagne leading-tight">
+          {heading}
+        </h2>
+      )}
+      {subheading && (
+        <p class="mt-4 text-xl text-brand-champagne/60 max-w-2xl mx-auto">
+          {subheading}
+        </p>
+      )}
+    </div>
+  )}
+</section>
+
+{parallax && (
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const parallaxEls = document.querySelectorAll('[data-parallax="true"]');
+      if (!parallaxEls.length) return;
+
+      const handleScroll = () => {
+        parallaxEls.forEach((el) => {
+          const rect = (el as HTMLElement).getBoundingClientRect();
+          const speed = 0.3;
+          const yPos = -(rect.top * speed);
+          (el as HTMLElement).style.transform = `translateY(${yPos}px)`;
+        });
+      };
+
+      window.addEventListener('scroll', handleScroll, { passive: true });
+    });
+  </script>
+)}

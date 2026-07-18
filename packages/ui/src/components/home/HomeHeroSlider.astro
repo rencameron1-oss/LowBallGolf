@@ -1,0 +1,2216 @@
+---
+interface Props {
+  slides: any[];
+  autoplaySeconds?: number;
+  ariaLabel?: string;
+  sliderId?: string;
+}
+
+const {
+  slides = [],
+  autoplaySeconds = 7,
+  ariaLabel = 'Creative hero slider',
+  sliderId = `ms-hero-${Math.random().toString(36).slice(2, 10)}`,
+} = Astro.props;
+
+const dotGridRows = 14;
+const dotGridCols = 28;
+const dotGridCells = Array.from({ length: dotGridRows * dotGridCols }, (_, index) => ({
+  index,
+  row: Math.floor(index / dotGridCols),
+  col: index % dotGridCols,
+}));
+
+const particleNodes = Array.from({ length: 28 }, (_, index) => ({
+  index,
+  top: `${6 + ((index * 17) % 82)}%`,
+  left: `${4 + ((index * 29) % 90)}%`,
+  size: `${0.18 + ((index % 5) * 0.07)}rem`,
+  driftX: `${((index % 7) - 3) * 1.3}rem`,
+  driftY: `${((index % 6) - 2.5) * 1.2}rem`,
+  duration: `${10 + ((index * 3) % 9)}s`,
+  delay: `${(index % 8) * -1.1}s`,
+}));
+
+const orbNodes = [
+  { top: '8%', left: '8%', size: '22rem', color: 'rgba(37, 99, 235, 0.18)' },
+  { top: '54%', left: '68%', size: '20rem', color: 'rgba(165, 90, 58, 0.16)' },
+  { top: '18%', left: '56%', size: '16rem', color: 'rgba(142, 147, 100, 0.14)' },
+];
+
+const getPosterStyle = (poster: any, posterIndex: number) =>
+  [
+    `--poster-top:${poster.top || 'auto'}`,
+    `--poster-left:${poster.left || 'auto'}`,
+    `--poster-width:${poster.width || '18rem'}`,
+    `--poster-rotate:${poster.rotate || '0deg'}`,
+    `--poster-delay:${posterIndex * 90}ms`,
+  ].join('; ');
+
+const getParticleStyle = (particle: any) =>
+  [
+    `--particle-top:${particle.top}`,
+    `--particle-left:${particle.left}`,
+    `--particle-size:${particle.size}`,
+    `--particle-drift-x:${particle.driftX}`,
+    `--particle-drift-y:${particle.driftY}`,
+    `--particle-duration:${particle.duration}`,
+    `--particle-delay:${particle.delay}`,
+  ].join('; ');
+
+const isVideoAsset = (url: string) => {
+  const normalizedUrl = url.toLowerCase();
+
+  return (
+    normalizedUrl.endsWith('.mp4') ||
+    normalizedUrl.endsWith('.webm') ||
+    normalizedUrl.endsWith('.ogg') ||
+    normalizedUrl.endsWith('.ogv') ||
+    normalizedUrl.endsWith('.mov')
+  );
+};
+
+const getVideoType = (url: string) => {
+  const normalizedUrl = url.toLowerCase();
+
+  if (normalizedUrl.endsWith('.webm')) {
+    return 'video/webm';
+  }
+
+  if (normalizedUrl.endsWith('.ogg') || normalizedUrl.endsWith('.ogv')) {
+    return 'video/ogg';
+  }
+
+  if (normalizedUrl.endsWith('.mov')) {
+    return 'video/quicktime';
+  }
+
+  return 'video/mp4';
+};
+---
+
+{slides.length > 0 && (
+  <section
+    class="ms-home-hero"
+    data-ms-hero-slider
+    data-theme={slides[0]?.theme === 'light' ? 'light' : 'dark'}
+    data-autoplay-seconds={String(autoplaySeconds)}
+    data-slider-id={sliderId}
+    aria-label={ariaLabel}
+    aria-roledescription="carousel"
+  >
+    <div class="ms-home-hero__stage">
+      {slides.map((slide, index) => {
+        const revealImage = slide.image || slide.backgroundImage || '';
+        const videoPoster = slide.videoPosterImage || slide.backgroundImage || slide.image || '';
+
+        return (
+          <section
+            id={`${sliderId}-slide-${slide.id}`}
+            class={`ms-home-slide ms-home-slide--${slide.layout} ${slide.theme === 'light' ? 'ms-home-slide--light' : 'ms-home-slide--dark'}`}
+            data-ms-slide
+            data-active={index === 0 ? 'true' : 'false'}
+            data-theme={slide.theme === 'light' ? 'light' : 'dark'}
+            data-layout={slide.layout}
+            data-duration-seconds={String(slide.durationSeconds || autoplaySeconds || 0)}
+            role="tabpanel"
+            aria-hidden={index === 0 ? 'false' : 'true'}
+          >
+            {slide.layout === 'parallax' ? (
+              <div class="ms-parallax-scene" data-ms-parallax-scene>
+                <div class="ms-parallax-scene__backdrop" aria-hidden="true">
+                  {slide.backgroundImage &&
+                    (isVideoAsset(slide.backgroundImage) ? (
+                      <video
+                        autoplay
+                        muted
+                        loop
+                        playsinline
+                        preload={index === 0 ? 'auto' : 'metadata'}
+                      >
+                        <source src={slide.backgroundImage} type={getVideoType(slide.backgroundImage)} />
+                      </video>
+                    ) : (
+                      <img src={slide.backgroundImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                    ))}
+                </div>
+                <div class="ms-parallax-scene__scrim"></div>
+
+                {slide.image && (
+                  <figure class="ms-parallax-scene__focus" aria-hidden="true">
+                    {isVideoAsset(slide.image) ? (
+                      <video
+                        autoplay
+                        muted
+                        loop
+                        playsinline
+                        preload={index === 0 ? 'auto' : 'metadata'}
+                      >
+                        <source src={slide.image} type={getVideoType(slide.image)} />
+                      </video>
+                    ) : (
+                      <img src={slide.image} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                    )}
+                  </figure>
+                )}
+
+                {slide.posters.length > 0 && (
+                  <div class="ms-parallax-scene__cluster" aria-hidden="true">
+                    {slide.posters.map((poster, posterIndex) => (
+                      <article
+                        class={`ms-poster ms-poster--${poster.variant || 'landscape'} ms-poster--parallax`}
+                        style={getPosterStyle(poster, posterIndex)}
+                      >
+                        {poster.kind === 'image' ? (
+                          <>
+                            <div class="ms-poster__media">
+                              {poster.image && (
+                                isVideoAsset(poster.image) ? (
+                                  <video
+                                    autoplay
+                                    muted
+                                    loop
+                                    playsinline
+                                    preload={index === 0 && posterIndex < 2 ? 'auto' : 'metadata'}
+                                  >
+                                    <source src={poster.image} type={getVideoType(poster.image)} />
+                                  </video>
+                                ) : (
+                                  <img src={poster.image} alt="" loading={index === 0 && posterIndex < 2 ? 'eager' : 'lazy'} />
+                                )
+                              )}
+                            </div>
+                            <div class="ms-poster__body">
+                              <span class="ms-poster__label">{poster.label}</span>
+                              <h3 class="ms-poster__title">{poster.title}</h3>
+                              <p class="ms-poster__meta">{poster.meta}</p>
+                            </div>
+                          </>
+                        ) : (
+                          <div class="ms-poster__body">
+                            <span class="ms-poster__label">{poster.label}</span>
+                            <h3 class="ms-poster__title">{poster.title}</h3>
+                            <p class="ms-poster__meta">{poster.meta}</p>
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : slide.layout === 'video' ? (
+              <div class="ms-video-scene">
+                <div class="ms-video-scene__backdrop" aria-hidden="true">
+                  {slide.videoUrl ? (
+                    <video
+                      autoplay
+                      muted
+                      loop
+                      playsinline
+                      preload={index === 0 ? 'auto' : 'metadata'}
+                      poster={videoPoster}
+                    >
+                      <source src={slide.videoUrl} type={getVideoType(slide.videoUrl)} />
+                    </video>
+                  ) : (
+                    slide.backgroundImage && (
+                      <img src={slide.backgroundImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                    )
+                  )}
+                </div>
+                <div class="ms-video-scene__scrim"></div>
+
+                {slide.image && (
+                  <figure class="ms-video-scene__feature" aria-hidden="true">
+                    <img src={slide.image} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                  </figure>
+                )}
+
+                {slide.posters.length > 0 && (
+                  <div class="ms-video-scene__rail" aria-hidden="true">
+                    {slide.posters.slice(0, 3).map((poster, posterIndex) => (
+                      <article
+                        class={`ms-poster ms-poster--${poster.variant || 'landscape'} ms-poster--video`}
+                        style={getPosterStyle(poster, posterIndex)}
+                      >
+                        {poster.kind === 'image' ? (
+                          <>
+                            <div class="ms-poster__media">
+                              {poster.image && (
+                                isVideoAsset(poster.image) ? (
+                                  <video
+                                    autoplay
+                                    muted
+                                    loop
+                                    playsinline
+                                    preload={index === 0 && posterIndex < 2 ? 'auto' : 'metadata'}
+                                  >
+                                    <source src={poster.image} type={getVideoType(poster.image)} />
+                                  </video>
+                                ) : (
+                                  <img src={poster.image} alt="" loading={index === 0 && posterIndex < 2 ? 'eager' : 'lazy'} />
+                                )
+                              )}
+                            </div>
+                            <div class="ms-poster__body">
+                              <span class="ms-poster__label">{poster.label}</span>
+                              <h3 class="ms-poster__title">{poster.title}</h3>
+                              <p class="ms-poster__meta">{poster.meta}</p>
+                            </div>
+                          </>
+                        ) : (
+                          <div class="ms-poster__body">
+                            <span class="ms-poster__label">{poster.label}</span>
+                            <h3 class="ms-poster__title">{poster.title}</h3>
+                            <p class="ms-poster__meta">{poster.meta}</p>
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : slide.layout === 'mural' ? (
+              <div class="ms-mural-scene">
+                <div class="ms-mural-scene__backdrop" aria-hidden="true">
+                  {slide.backgroundImage && (
+                    <img src={slide.backgroundImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                  )}
+                </div>
+                <div class="ms-mural-scene__scrim"></div>
+
+                {slide.posters.length > 0 && (
+                  <div class="ms-mural-scene__cluster" aria-hidden="true">
+                    {slide.posters.map((poster, posterIndex) => (
+                      <article
+                        class={`ms-poster ms-poster--${poster.variant || 'landscape'} ms-poster--mural`}
+                        style={getPosterStyle(poster, posterIndex)}
+                      >
+                        {poster.kind === 'image' ? (
+                          <>
+                            <div class="ms-poster__media">
+                              {poster.image && (
+                                isVideoAsset(poster.image) ? (
+                                  <video
+                                    autoplay
+                                    muted
+                                    loop
+                                    playsinline
+                                    preload={index === 0 && posterIndex < 2 ? 'auto' : 'metadata'}
+                                  >
+                                    <source src={poster.image} type={getVideoType(poster.image)} />
+                                  </video>
+                                ) : (
+                                  <img src={poster.image} alt="" loading={index === 0 && posterIndex < 2 ? 'eager' : 'lazy'} />
+                                )
+                              )}
+                            </div>
+                            <div class="ms-poster__body">
+                              <span class="ms-poster__label">{poster.label}</span>
+                              <h3 class="ms-poster__title">{poster.title}</h3>
+                              <p class="ms-poster__meta">{poster.meta}</p>
+                            </div>
+                          </>
+                        ) : (
+                          <div class="ms-poster__body">
+                            <span class="ms-poster__label">{poster.label}</span>
+                            <h3 class="ms-poster__title">{poster.title}</h3>
+                            <p class="ms-poster__meta">{poster.meta}</p>
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : slide.layout === 'poster' ? (
+              <div class="ms-poster-scene">
+                {slide.backgroundImage && (
+                  <div class="ms-poster-scene__feature" aria-hidden="true">
+                    <img src={slide.backgroundImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                  </div>
+                )}
+                <div class="ms-poster-scene__wash"></div>
+                <div class="ms-poster-scene__graffiti" aria-hidden="true">
+                  {slide.graffiti.map((tag) => (
+                    <span style={`top:${tag.top || '50%'}; left:${tag.left || '50%'}; --graffiti-rotate:${tag.rotate || '0deg'};`}>
+                      {tag.text}
+                    </span>
+                  ))}
+                </div>
+                <div class="ms-poster-scene__cluster" aria-hidden="true">
+                  {slide.posters.map((poster, posterIndex) => (
+                    <article
+                      class={`ms-poster ms-poster--${poster.variant || 'landscape'}`}
+                      style={getPosterStyle(poster, posterIndex)}
+                    >
+                      {poster.kind === 'image' ? (
+                        <>
+                          <div class="ms-poster__media">
+                            {poster.image && (
+                              isVideoAsset(poster.image) ? (
+                                <video
+                                  autoplay
+                                  muted
+                                  loop
+                                  playsinline
+                                  preload={index === 0 && posterIndex < 2 ? 'auto' : 'metadata'}
+                                >
+                                  <source src={poster.image} type={getVideoType(poster.image)} />
+                                </video>
+                              ) : (
+                                <img src={poster.image} alt="" loading={index === 0 && posterIndex < 2 ? 'eager' : 'lazy'} />
+                              )
+                            )}
+                          </div>
+                          <div class="ms-poster__body">
+                            <span class="ms-poster__label">{poster.label}</span>
+                            <h3 class="ms-poster__title">{poster.title}</h3>
+                            <p class="ms-poster__meta">{poster.meta}</p>
+                          </div>
+                        </>
+                      ) : (
+                        <div class="ms-poster__body">
+                          <span class="ms-poster__label">{poster.label}</span>
+                          <h3 class="ms-poster__title">{poster.title}</h3>
+                          <p class="ms-poster__meta">{poster.meta}</p>
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div
+                class="ms-dot-scene"
+                data-ms-dot-scene
+                style="--reveal-strength:0; --pointer-x:50%; --pointer-y:50%;"
+              >
+                <div class="ms-dot-scene__base" aria-hidden="true">
+                  {slide.backgroundImage && (
+                    <img src={slide.backgroundImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                  )}
+                </div>
+                <div class="ms-dot-scene__reveal" aria-hidden="true">
+                  {revealImage && (
+                    <img src={revealImage} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                  )}
+                </div>
+                <div class="ms-dot-scene__wash"></div>
+                <div class="ms-dot-scene__grid-wrap">
+                  <div
+                    class="ms-dot-scene__grid"
+                    data-ms-dot-grid
+                    data-dot-cols={dotGridCols}
+                    data-dot-rows={dotGridRows}
+                    style={`--dot-cols:${dotGridCols}; --dot-rows:${dotGridRows};`}
+                    tabindex="0"
+                    role="group"
+                    aria-label="Interactive dot field revealing the slide image"
+                  >
+                    <span class="ms-visually-hidden">
+                      Hover, tap, or use the arrow keys to move through the dot field and reveal the image.
+                    </span>
+                    {dotGridCells.map((cell) => (
+                      <span
+                        class="ms-dot"
+                        data-ms-dot
+                        data-col={cell.col}
+                        data-row={cell.row}
+                        aria-hidden="true"
+                      ></span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div class="ms-slide-effects" aria-hidden="true">
+              {slide.effects?.includes('grid') && <div class="ms-slide-effect ms-slide-effect--grid"></div>}
+              {slide.effects?.includes('scanlines') && <div class="ms-slide-effect ms-slide-effect--scanlines"></div>}
+              {slide.effects?.includes('mobile-glow') && <div class="ms-slide-effect ms-slide-effect--mobile-glow"></div>}
+              {slide.effects?.includes('orbs') && (
+                <div class="ms-slide-orbs">
+                  {orbNodes.map((orb) => (
+                    <span
+                      style={`--orb-top:${orb.top}; --orb-left:${orb.left}; --orb-size:${orb.size}; --orb-color:${orb.color};`}
+                    ></span>
+                  ))}
+                </div>
+              )}
+              {slide.effects?.includes('particles') && (
+                <div class="ms-slide-particles">
+                  {particleNodes.map((particle) => (
+                    <span style={getParticleStyle(particle)}></span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      })}
+
+      <div class="ms-home-hero__veil"></div>
+
+      <div class="ms-home-hero__overlay">
+        <div class="ms-home-hero__overlay-inner">
+          <div class="ms-home-hero__copy-stack">
+            {slides.map((slide, index) => {
+              return (
+                <div
+                  class={`ms-home-copy ${slide.theme === 'light' ? 'ms-home-copy--light' : ''} ${
+                    slide.layout === 'dot-grid' ? 'ms-home-copy--wide' : ''
+                  } ${slide.layout === 'video' ? 'ms-home-copy--video' : ''}`}
+                  data-ms-copy
+                  data-active={index === 0 ? 'true' : 'false'}
+                  data-heading-font={slide.headingFont}
+                  data-heading-size={slide.headingSize}
+                >
+                  <p class="ms-home-copy__eyebrow">{slide.eyebrow}</p>
+                  <h1 class="ms-home-copy__title">{slide.heroHeading}</h1>
+                  <p class="ms-home-copy__text">{slide.heroText}</p>
+                  <div class="ms-home-copy__badges">
+                    {slide.badges.map((badge) => (
+                      <span>{badge}</span>
+                    ))}
+                  </div>
+                  {(slide.primaryCtaText || slide.secondaryCtaText) && (
+                    <div class="ms-home-copy__actions">
+                      {slide.primaryCtaText && slide.primaryCtaUrl && (
+                        <a
+                          class={`ms-home-copy__button ${slide.theme === 'light' ? 'ms-home-copy__button--dark' : 'ms-home-copy__button--primary'}`}
+                          href={slide.primaryCtaUrl}
+                        >
+                          {slide.primaryCtaText}
+                        </a>
+                      )}
+                      {slide.secondaryCtaText && slide.secondaryCtaUrl && (
+                        <a
+                          class={`ms-home-copy__button ${slide.theme === 'light' ? 'ms-home-copy__button--ghost-dark' : 'ms-home-copy__button--ghost'}`}
+                          href={slide.secondaryCtaUrl}
+                        >
+                          {slide.secondaryCtaText}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {slides.length > 1 && (
+            <div class="ms-home-hero__controls" aria-label={`${ariaLabel} controls`}>
+              <button
+                type="button"
+                class="ms-home-hero__arrow"
+                data-ms-arrow-prev
+                aria-label="Show previous slide"
+                disabled
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                  <path d="M9.75 3.5 5.25 8l4.5 4.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></path>
+                </svg>
+              </button>
+
+              <div class="ms-home-hero__nav" role="tablist" aria-label={`${ariaLabel} views`}>
+                {slides.map((slide, index) => (
+                  <button
+                    type="button"
+                    class="ms-home-hero__nav-button"
+                    data-ms-control
+                    data-index={index}
+                    data-active={index === 0 ? 'true' : 'false'}
+                    role="tab"
+                    tabindex={index === 0 ? '0' : '-1'}
+                    aria-selected={index === 0 ? 'true' : 'false'}
+                    aria-controls={`${sliderId}-slide-${slide.id}`}
+                    aria-label={`Show slide ${index + 1}: ${slide.tab}`}
+                  >
+                    <span class="ms-home-hero__nav-dot" aria-hidden="true"></span>
+                    <span class="ms-visually-hidden">{slide.tab}</span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                class="ms-home-hero__arrow"
+                data-ms-arrow-next
+                aria-label="Show next slide"
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                  <path d="m6.25 3.5 4.5 4.5-4.5 4.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"></path>
+                </svg>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .ms-home-hero {
+    --ms-header-offset: 4.5rem;
+    position: relative;
+    width: 100vw;
+    margin-right: calc(50% - 50vw);
+    margin-left: calc(50% - 50vw);
+    margin-top: calc(-1 * var(--ms-header-offset));
+  }
+
+  .ms-home-hero__stage {
+    position: relative;
+    min-height: 100svh;
+    overflow: hidden;
+    background: #090b10;
+  }
+
+  .ms-home-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 620ms ease,
+      transform 620ms ease,
+      filter 620ms ease;
+    transform: scale(1.02);
+    filter: blur(8px);
+  }
+
+  .ms-home-slide[data-active='true'] {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    filter: none;
+  }
+
+  .ms-home-slide--dark {
+    color: #f2efe8;
+  }
+
+  .ms-home-slide--light {
+    color: #09090b;
+  }
+
+  .ms-home-hero__veil {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background:
+      linear-gradient(90deg, rgba(6, 8, 11, 0.92) 0%, rgba(6, 8, 11, 0.8) 18%, rgba(6, 8, 11, 0.42) 36%, rgba(6, 8, 11, 0.12) 58%, rgba(6, 8, 11, 0.34) 78%, rgba(6, 8, 11, 0.62) 100%),
+      linear-gradient(180deg, rgba(6, 8, 11, 0.22) 0%, rgba(6, 8, 11, 0.02) 26%, rgba(6, 8, 11, 0.38) 100%);
+    pointer-events: none;
+  }
+
+  .ms-home-hero[data-theme='light'] .ms-home-hero__veil {
+    background:
+      linear-gradient(90deg, rgba(250, 250, 247, 0.74) 0%, rgba(250, 250, 247, 0.38) 32%, rgba(250, 250, 247, 0.08) 64%, rgba(250, 250, 247, 0.26) 100%),
+      linear-gradient(180deg, rgba(250, 250, 247, 0.18) 0%, rgba(250, 250, 247, 0) 28%, rgba(250, 250, 247, 0.24) 100%);
+  }
+
+  .ms-home-hero__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    padding:
+      calc(var(--ms-header-offset) + 1.5rem)
+      clamp(1rem, 4vw, 3.75rem)
+      1.8rem;
+    pointer-events: none;
+  }
+
+  .ms-home-hero__overlay-inner {
+    display: flex;
+    min-height: calc(100svh - (var(--ms-header-offset) + 3.6rem));
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+  }
+
+  .ms-home-hero__copy-stack {
+    position: relative;
+    width: min(38rem, 42vw);
+    min-height: 22rem;
+    margin-bottom: 6rem;
+    pointer-events: auto;
+  }
+
+  .ms-home-copy {
+    --hero-heading-font: var(--font-hero-heading, var(--font-heading));
+    --hero-heading-size: clamp(2.8rem, 5.2vw, 5.2rem);
+    --hero-heading-line-height: 1;
+    --hero-heading-weight: 800;
+    position: absolute;
+    inset: auto 0 0;
+    width: 100%;
+    opacity: 0;
+    transform: translateY(1rem);
+    transition:
+      opacity 420ms ease,
+      transform 420ms ease;
+    color: #f2efe8;
+  }
+
+  .ms-home-copy[data-active='true'] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .ms-home-copy--light {
+    color: #09090b;
+  }
+
+  .ms-home-copy--wide {
+    width: min(46rem, 50vw);
+  }
+
+  .ms-home-copy--video {
+    width: min(36rem, 38vw);
+  }
+
+  .ms-home-copy[data-heading-font='heading'] {
+    --hero-heading-font: var(--font-heading);
+  }
+
+  .ms-home-copy[data-heading-font='body'] {
+    --hero-heading-font: var(--font-body);
+    --hero-heading-weight: 800;
+  }
+
+  .ms-home-copy[data-heading-font='logo'] {
+    --hero-heading-font: var(--font-logo);
+  }
+
+  .ms-home-copy[data-heading-size='compact'] {
+    --hero-heading-size: clamp(2.4rem, 4.5vw, 4.3rem);
+  }
+
+  .ms-home-copy[data-heading-size='statement'] {
+    --hero-heading-size: clamp(3.2rem, 6.2vw, 6.4rem);
+    --hero-heading-line-height: 0.96;
+  }
+
+  .ms-home-copy__eyebrow {
+    margin: 0;
+    color: #8e9364;
+    font-family: var(--font-body);
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .ms-home-copy--light .ms-home-copy__eyebrow {
+    color: rgba(49, 58, 50, 0.72);
+  }
+
+  .ms-home-copy__title {
+    margin: 0.82rem 0 0;
+    max-width: 14ch;
+    color: #f7f3eb;
+    font-family: var(--hero-heading-font);
+    font-size: var(--hero-heading-size);
+    font-weight: var(--hero-heading-weight);
+    line-height: var(--hero-heading-line-height);
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+
+  .ms-home-copy--wide .ms-home-copy__title {
+    max-width: 16ch;
+  }
+
+  .ms-home-copy--light .ms-home-copy__title {
+    color: #09090b;
+  }
+
+  .ms-home-copy__text {
+    margin: 1rem 0 0;
+    max-width: 34rem;
+    color: rgba(242, 239, 232, 0.78);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.75;
+    text-wrap: balance;
+  }
+
+  .ms-home-copy--light .ms-home-copy__text {
+    color: rgba(9, 9, 11, 0.72);
+  }
+
+  .ms-home-copy__badges {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    margin-top: 1.15rem;
+  }
+
+  .ms-home-copy__badges span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.2rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(8, 10, 14, 0.42);
+    color: rgba(242, 239, 232, 0.76);
+    font-family: var(--font-body);
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .ms-home-copy--light .ms-home-copy__badges span {
+    border-color: rgba(9, 9, 11, 0.08);
+    background: rgba(255, 255, 255, 0.72);
+    color: rgba(9, 9, 11, 0.68);
+  }
+
+  .ms-home-copy__actions {
+    display: flex;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+  }
+
+  .ms-home-copy__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.2rem;
+    padding: 0.9rem 1.25rem;
+    border-radius: 999px;
+    text-decoration: none;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    transition:
+      transform 180ms ease,
+      background 180ms ease,
+      border-color 180ms ease,
+      color 180ms ease;
+  }
+
+  .ms-home-copy__button:hover,
+  .ms-home-copy__button:focus-visible {
+    transform: translateY(-1px);
+    outline: none;
+  }
+
+  .ms-home-copy__button--primary {
+    background: var(--color-brand-dark-accent);
+    border: 1px solid var(--color-brand-dark-accent);
+    color: white;
+  }
+
+  .ms-home-copy__button--ghost {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    color: #f2efe8;
+  }
+
+  .ms-home-copy__button--dark {
+    background: var(--color-brand-ink);
+    border: 1px solid var(--color-brand-ink);
+    color: white;
+  }
+
+  .ms-home-copy__button--ghost-dark {
+    border: 1px solid rgba(9, 9, 11, 0.12);
+    background: rgba(9, 9, 11, 0.03);
+    color: #111826;
+  }
+
+  .ms-home-hero__controls {
+    position: absolute;
+    left: 50%;
+    bottom: max(1.15rem, env(safe-area-inset-bottom));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.36rem 0.42rem;
+    border-radius: 999px;
+    background: rgba(8, 10, 14, 0.2);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transform: translateX(-50%);
+    pointer-events: auto;
+  }
+
+  .ms-home-hero__nav {
+    display: flex;
+    justify-content: center;
+    gap: 0.55rem;
+  }
+
+  .ms-home-hero__nav-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 0.9rem;
+    height: 0.9rem;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    transition:
+      transform 180ms ease,
+      opacity 180ms ease;
+  }
+
+  .ms-home-hero__nav-button:hover,
+  .ms-home-hero__nav-button:focus-visible {
+    transform: translateY(-1px);
+    opacity: 1;
+    outline: none;
+  }
+
+  .ms-home-hero__nav-button[data-active='true'] {
+    transform: scale(1.08);
+  }
+
+  .ms-home-hero__arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.84);
+    transition:
+      background 180ms ease,
+      color 180ms ease,
+      opacity 180ms ease,
+      transform 180ms ease;
+  }
+
+  .ms-home-hero__arrow svg {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .ms-home-hero__arrow:hover,
+  .ms-home-hero__arrow:focus-visible {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.96);
+    transform: translateY(-1px);
+    outline: none;
+  }
+
+  .ms-home-hero__arrow:disabled {
+    opacity: 0.3;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: default;
+  }
+
+  .ms-home-hero__arrow:disabled:hover,
+  .ms-home-hero__arrow:disabled:focus-visible {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.4);
+    transform: none;
+  }
+
+  .ms-home-hero__nav-dot {
+    display: block;
+    width: 0.52rem;
+    height: 0.52rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.42);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+    transition:
+      width 180ms ease,
+      background 180ms ease,
+      box-shadow 180ms ease,
+      transform 180ms ease;
+  }
+
+  .ms-home-hero__nav-button:hover .ms-home-hero__nav-dot,
+  .ms-home-hero__nav-button:focus-visible .ms-home-hero__nav-dot {
+    background: rgba(255, 255, 255, 0.76);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.24);
+  }
+
+  .ms-home-hero__nav-button[data-active='true'] .ms-home-hero__nav-dot {
+    width: 1.55rem;
+    background: var(--color-brand-dark-accent);
+    box-shadow: 0 0 0 1px rgba(var(--color-brand-dark-accent-rgb), 0.34);
+  }
+
+  .ms-home-hero[data-theme='light'] .ms-home-hero__controls {
+    background: rgba(255, 255, 255, 0.32);
+  }
+
+  .ms-home-hero[data-theme='light'] .ms-home-hero__arrow {
+    color: rgba(17, 24, 38, 0.72);
+  }
+
+  .ms-home-hero[data-theme='light'] .ms-home-hero__arrow:hover,
+  .ms-home-hero[data-theme='light'] .ms-home-hero__arrow:focus-visible {
+    background: rgba(17, 24, 38, 0.08);
+    color: rgba(17, 24, 38, 0.92);
+  }
+
+  .ms-home-hero[data-theme='light'] .ms-home-hero__arrow:disabled,
+  .ms-home-hero[data-theme='light'] .ms-home-hero__arrow:disabled:hover,
+  .ms-home-hero[data-theme='light'] .ms-home-hero__arrow:disabled:focus-visible {
+    color: rgba(17, 24, 38, 0.32);
+    background: transparent;
+  }
+
+  .ms-home-hero[data-theme='light'] .ms-home-hero__nav-dot {
+    background: rgba(17, 24, 38, 0.28);
+    box-shadow: 0 0 0 1px rgba(17, 24, 38, 0.12);
+  }
+
+  .ms-home-hero[data-theme='light'] .ms-home-hero__nav-button:hover .ms-home-hero__nav-dot,
+  .ms-home-hero[data-theme='light'] .ms-home-hero__nav-button:focus-visible .ms-home-hero__nav-dot {
+    background: rgba(17, 24, 38, 0.58);
+    box-shadow: 0 0 0 1px rgba(17, 24, 38, 0.14);
+  }
+
+  .ms-home-hero[data-theme='light'] .ms-home-hero__nav-button[data-active='true'] .ms-home-hero__nav-dot {
+    background: var(--color-brand-ink);
+    box-shadow: 0 0 0 1px rgba(17, 24, 38, 0.16);
+  }
+
+  .ms-slide-effects {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .ms-slide-effect {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .ms-slide-effect--grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 7rem 7rem;
+    opacity: 0.34;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.86), rgba(0, 0, 0, 0.22));
+  }
+
+  .ms-home-slide--light .ms-slide-effect--grid {
+    background-image:
+      linear-gradient(rgba(9, 9, 11, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(9, 9, 11, 0.08) 1px, transparent 1px);
+  }
+
+  .ms-slide-effect--scanlines {
+    background-image: repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.06) 0,
+      rgba(255, 255, 255, 0.06) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+    opacity: 0.14;
+    mix-blend-mode: soft-light;
+  }
+
+  .ms-home-slide--light .ms-slide-effect--scanlines {
+    background-image: repeating-linear-gradient(
+      180deg,
+      rgba(9, 9, 11, 0.06) 0,
+      rgba(9, 9, 11, 0.06) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  }
+
+  .ms-slide-effect--mobile-glow {
+    opacity: 0;
+  }
+
+  @keyframes ms-mobile-glow-drift {
+    0% {
+      transform: translate3d(-4%, -2%, 0) scale(0.96);
+      opacity: 0.42;
+    }
+
+    50% {
+      transform: translate3d(1%, 1%, 0) scale(1.03);
+      opacity: 0.58;
+    }
+
+    100% {
+      transform: translate3d(4%, 2%, 0) scale(1);
+      opacity: 0.46;
+    }
+  }
+
+  .ms-slide-orbs span {
+    position: absolute;
+    top: var(--orb-top);
+    left: var(--orb-left);
+    width: var(--orb-size);
+    height: var(--orb-size);
+    border-radius: 999px;
+    background: var(--orb-color);
+    filter: blur(68px);
+    opacity: 0.86;
+    animation: ms-orb-drift 12s ease-in-out infinite alternate;
+  }
+
+  .ms-slide-particles span {
+    position: absolute;
+    top: var(--particle-top);
+    left: var(--particle-left);
+    width: var(--particle-size);
+    height: var(--particle-size);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.52);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    opacity: 0.38;
+    animation:
+      ms-particle-float var(--particle-duration) ease-in-out infinite,
+      ms-particle-pulse 4.4s ease-in-out infinite;
+    animation-delay: var(--particle-delay);
+  }
+
+  .ms-home-slide--light .ms-slide-particles span {
+    background: rgba(17, 24, 38, 0.36);
+    box-shadow: 0 0 0 1px rgba(17, 24, 38, 0.04);
+  }
+
+  .ms-poster {
+    position: absolute;
+    top: var(--poster-top);
+    left: var(--poster-left);
+    width: var(--poster-width);
+    overflow: hidden;
+    border-radius: 0.7rem;
+    border: 1px solid rgba(12, 15, 21, 0.68);
+    background: #dfd5c6;
+    color: #181512;
+    box-shadow:
+      0 24px 44px rgba(0, 0, 0, 0.34),
+      0 1px 0 rgba(255, 255, 255, 0.16) inset;
+    opacity: 0;
+    transform: translate3d(0, 1.2rem, 0) rotate(var(--poster-rotate));
+    transition:
+      opacity 620ms cubic-bezier(.2, .8, .2, 1),
+      transform 620ms cubic-bezier(.2, .8, .2, 1);
+    transition-delay: var(--poster-delay);
+    pointer-events: none;
+  }
+
+  .ms-home-slide[data-active='true'] .ms-poster {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(var(--poster-rotate));
+  }
+
+  .ms-poster__media {
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: #1b2230;
+  }
+
+  .ms-poster--support .ms-poster__media,
+  .ms-poster--note .ms-poster__media {
+    aspect-ratio: 3 / 4;
+  }
+
+  .ms-poster__media img,
+  .ms-poster__media video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    filter: saturate(0.84) contrast(1.05);
+  }
+
+  .ms-poster__body {
+    padding: 0.85rem 0.88rem 0.95rem;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 26%),
+      #dfd5c6;
+  }
+
+  .ms-poster__label {
+    display: inline-flex;
+    margin-bottom: 0.42rem;
+    color: #7a4a33;
+    font-family: var(--font-body);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .ms-poster__title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    line-height: 0.95;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    white-space: pre-line;
+  }
+
+  .ms-poster__meta {
+    margin: 0.45rem 0 0;
+    color: rgba(24, 21, 18, 0.72);
+    font-family: var(--font-body);
+    font-size: 0.74rem;
+    line-height: 1.5;
+  }
+
+  .ms-poster--type,
+  .ms-poster--manifesto {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 24%),
+      #ebe0cf;
+  }
+
+  .ms-poster--type .ms-poster__body,
+  .ms-poster--manifesto .ms-poster__body {
+    min-height: 14rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.26), transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 20%),
+      #e7dac6;
+  }
+
+  .ms-poster--manifesto .ms-poster__body {
+    min-height: 18rem;
+  }
+
+  .ms-parallax-scene,
+  .ms-video-scene,
+  .ms-mural-scene,
+  .ms-poster-scene,
+  .ms-dot-scene {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .ms-parallax-scene {
+    --scene-shift-x: 0;
+    --scene-shift-y: 0;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(49, 88, 137, 0.22), transparent 24%),
+      radial-gradient(circle at 82% 16%, rgba(165, 90, 58, 0.16), transparent 20%),
+      linear-gradient(180deg, #07090d 0%, #101620 100%);
+  }
+
+  .ms-parallax-scene__backdrop,
+  .ms-video-scene__backdrop,
+  .ms-mural-scene__backdrop,
+  .ms-poster-scene__feature,
+  .ms-dot-scene__base,
+  .ms-dot-scene__reveal {
+    position: absolute;
+    inset: 0;
+  }
+
+  .ms-parallax-scene__backdrop img,
+  .ms-parallax-scene__backdrop video,
+  .ms-video-scene__backdrop img,
+  .ms-video-scene__backdrop video,
+  .ms-mural-scene__backdrop img,
+  .ms-mural-scene__backdrop video,
+  .ms-poster-scene__feature img,
+  .ms-poster-scene__feature video,
+  .ms-dot-scene__base img,
+  .ms-dot-scene__base video,
+  .ms-dot-scene__reveal img,
+  .ms-dot-scene__reveal video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+
+  .ms-parallax-scene__backdrop img,
+  .ms-parallax-scene__backdrop video {
+    filter: saturate(0.86) contrast(1.04) brightness(0.56);
+    transform: scale(1.09)
+      translate3d(calc(var(--scene-shift-x) * -2.6%), calc(var(--scene-shift-y) * -2%), 0);
+    transition: transform 220ms ease;
+  }
+
+  .ms-parallax-scene__scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(6, 8, 11, 0.94) 0%, rgba(6, 8, 11, 0.82) 20%, rgba(6, 8, 11, 0.44) 40%, rgba(6, 8, 11, 0.12) 60%, rgba(6, 8, 11, 0.3) 100%),
+      linear-gradient(180deg, rgba(6, 8, 11, 0.18) 0%, rgba(6, 8, 11, 0.02) 28%, rgba(6, 8, 11, 0.46) 100%);
+  }
+
+  .ms-parallax-scene__focus {
+    position: absolute;
+    top: 11%;
+    right: 16%;
+    width: min(28rem, 27vw);
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 36px 80px rgba(0, 0, 0, 0.34);
+    transform:
+      translate3d(calc(var(--scene-shift-x) * 4%), calc(var(--scene-shift-y) * 6%), 0)
+      rotate(calc(var(--scene-shift-x) * 4deg));
+    transition: transform 220ms ease;
+  }
+
+  .ms-parallax-scene__focus img,
+  .ms-parallax-scene__focus video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    filter: saturate(0.92) contrast(1.04) brightness(0.94);
+  }
+
+  .ms-parallax-scene__cluster {
+    position: absolute;
+    inset:
+      calc(var(--ms-header-offset) + 0.5rem)
+      -7vw
+      -5vh
+      36vw;
+    transform: scale(1.04);
+  }
+
+  .ms-poster--parallax {
+    box-shadow:
+      0 22px 42px rgba(0, 0, 0, 0.36),
+      0 1px 0 rgba(255, 255, 255, 0.1) inset;
+  }
+
+  .ms-video-scene {
+    background:
+      radial-gradient(circle at 16% 18%, rgba(49, 88, 137, 0.18), transparent 24%),
+      linear-gradient(180deg, #05070b 0%, #0a1017 100%);
+  }
+
+  .ms-video-scene__backdrop video,
+  .ms-video-scene__backdrop img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    filter: saturate(0.76) contrast(1.02) brightness(0.48);
+  }
+
+  .ms-video-scene__scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(5, 7, 11, 0.94) 0%, rgba(5, 7, 11, 0.76) 24%, rgba(5, 7, 11, 0.3) 48%, rgba(5, 7, 11, 0.1) 68%, rgba(5, 7, 11, 0.46) 100%),
+      linear-gradient(180deg, rgba(5, 7, 11, 0.12), rgba(5, 7, 11, 0.48));
+  }
+
+  .ms-video-scene__feature {
+    position: absolute;
+    right: 8%;
+    bottom: 14%;
+    width: min(18rem, 18vw);
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 1.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 24px 54px rgba(0, 0, 0, 0.3);
+  }
+
+  .ms-video-scene__feature img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+
+  .ms-video-scene__rail {
+    position: absolute;
+    top: 10%;
+    right: 5%;
+    width: 19rem;
+  }
+
+  .ms-video-scene__rail .ms-poster {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    margin-bottom: 0.9rem;
+  }
+
+  .ms-video-scene__rail .ms-poster:nth-child(2) {
+    width: 86%;
+    margin-left: auto;
+  }
+
+  .ms-video-scene__rail .ms-poster:nth-child(3) {
+    width: 78%;
+    margin-left: 8%;
+  }
+
+  .ms-mural-scene {
+    background:
+      radial-gradient(circle at 18% 18%, rgba(49, 88, 137, 0.18), transparent 24%),
+      radial-gradient(circle at 82% 16%, rgba(165, 90, 58, 0.14), transparent 20%),
+      linear-gradient(180deg, #06080b 0%, #090d12 100%);
+  }
+
+  .ms-mural-scene__backdrop img {
+    object-position: 72% center;
+    filter: saturate(0.92) contrast(1.04) brightness(0.72);
+    transform: scale(1.03);
+  }
+
+  .ms-mural-scene__scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(4, 6, 9, 0.92) 0%, rgba(4, 6, 9, 0.84) 18%, rgba(4, 6, 9, 0.52) 38%, rgba(4, 6, 9, 0.16) 56%, rgba(4, 6, 9, 0.12) 100%),
+      linear-gradient(180deg, rgba(5, 7, 10, 0.26) 0%, rgba(5, 7, 10, 0.04) 30%, rgba(5, 7, 10, 0.3) 100%);
+  }
+
+  .ms-mural-scene__cluster {
+    position: absolute;
+    inset: 0;
+  }
+
+  .ms-mural-scene .ms-poster {
+    background:
+      linear-gradient(180deg, rgba(20, 24, 31, 0.98), rgba(8, 11, 16, 0.98)),
+      #0b1017;
+    color: #f3efe7;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 28px 56px rgba(0, 0, 0, 0.42),
+      0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  }
+
+  .ms-mural-scene .ms-poster__body {
+    background:
+      radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.08), transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 18%),
+      rgba(8, 11, 16, 0.96);
+  }
+
+  .ms-mural-scene .ms-poster--type,
+  .ms-mural-scene .ms-poster--manifesto {
+    background:
+      linear-gradient(180deg, rgba(22, 26, 34, 0.92), rgba(10, 13, 19, 0.92)),
+      #0b1017;
+    color: #f3efe7;
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .ms-mural-scene .ms-poster--type .ms-poster__body,
+  .ms-mural-scene .ms-poster--manifesto .ms-poster__body {
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.08), transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 20%),
+      rgba(8, 11, 16, 0.96);
+  }
+
+  .ms-mural-scene .ms-poster__label,
+  .ms-mural-scene .ms-poster__meta {
+    color: rgba(235, 232, 223, 0.82);
+  }
+
+  .ms-mural-scene .ms-poster__label {
+    color: #d7b18a;
+  }
+
+  .ms-mural-scene .ms-poster__title {
+    color: #f3efe7;
+  }
+
+  .ms-poster-scene {
+    background:
+      radial-gradient(circle at 18% 18%, rgba(49, 88, 137, 0.22), transparent 24%),
+      radial-gradient(circle at 82% 18%, rgba(165, 90, 58, 0.14), transparent 18%),
+      radial-gradient(circle at 48% 48%, rgba(255, 255, 255, 0.04), transparent 32%),
+      linear-gradient(180deg, #0b1118 0%, #101723 100%);
+  }
+
+  .ms-poster-scene__feature img {
+    object-position: center;
+    filter: saturate(0.68) contrast(1.02) brightness(0.5);
+    transform: scale(1.05);
+  }
+
+  .ms-poster-scene__wash {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(8, 10, 14, 0.99) 0%, rgba(8, 10, 14, 0.86) 16%, rgba(8, 10, 14, 0.58) 28%, rgba(8, 10, 14, 0.16) 46%, rgba(8, 10, 14, 0.08) 70%, rgba(8, 10, 14, 0.4) 100%),
+      linear-gradient(180deg, rgba(8, 10, 14, 0.26) 0%, transparent 22%, rgba(8, 10, 14, 0.32) 100%);
+    z-index: 0;
+  }
+
+  .ms-poster-scene__graffiti {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .ms-poster-scene__graffiti span {
+    position: absolute;
+    color: rgba(184, 194, 255, 0.18);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transform: rotate(var(--graffiti-rotate));
+  }
+
+  .ms-poster-scene__cluster {
+    position: absolute;
+    inset:
+      calc(var(--ms-header-offset) - 0.4rem)
+      -7vw
+      -5vh
+      -4vw;
+    z-index: 1;
+    transform: scale(1.16);
+    transform-origin: center center;
+  }
+
+  .ms-dot-scene {
+    background:
+      radial-gradient(circle at 14% 18%, rgba(37, 99, 235, 0.08), transparent 18%),
+      linear-gradient(180deg, #fafaf7 0%, #f2f2ed 100%);
+  }
+
+  .ms-dot-scene__base img {
+    filter: grayscale(1) contrast(1.12) brightness(0.34);
+    transform: scale(1.05);
+  }
+
+  .ms-dot-scene__reveal {
+    opacity: calc(0.18 + (var(--reveal-strength) * 0.82));
+    -webkit-mask-image: radial-gradient(
+      circle at var(--pointer-x) var(--pointer-y),
+      rgba(0, 0, 0, 1) 0,
+      rgba(0, 0, 0, 0.98) calc(6% + (var(--reveal-strength) * 10%)),
+      rgba(0, 0, 0, 0.8) calc(14% + (var(--reveal-strength) * 16%)),
+      transparent calc(26% + (var(--reveal-strength) * 18%))
+    );
+    mask-image: radial-gradient(
+      circle at var(--pointer-x) var(--pointer-y),
+      rgba(0, 0, 0, 1) 0,
+      rgba(0, 0, 0, 0.98) calc(6% + (var(--reveal-strength) * 10%)),
+      rgba(0, 0, 0, 0.8) calc(14% + (var(--reveal-strength) * 16%)),
+      transparent calc(26% + (var(--reveal-strength) * 18%))
+    );
+  }
+
+  .ms-dot-scene__reveal img {
+    filter: saturate(0.94) contrast(1.04) brightness(0.96);
+    transform: scale(calc(1.01 + (var(--reveal-strength) * 0.03)));
+    transition:
+      transform 180ms ease,
+      opacity 180ms ease;
+  }
+
+  .ms-dot-scene__wash {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(250, 250, 247, 0.78) 0%, rgba(250, 250, 247, 0.48) 28%, rgba(250, 250, 247, 0.08) 58%, rgba(250, 250, 247, 0.2) 100%),
+      linear-gradient(180deg, rgba(250, 250, 247, 0.14), rgba(250, 250, 247, 0.28));
+  }
+
+  .ms-dot-scene__grid-wrap {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+
+  .ms-dot-scene__grid {
+    display: grid;
+    grid-template-columns: repeat(var(--dot-cols), minmax(0, 1fr));
+    gap: clamp(0.42rem, 0.74vw, 0.82rem);
+    width: min(92vw, 92rem);
+    height: min(86vh, 52rem);
+    padding: clamp(1rem, 3vw, 2rem);
+    outline: none;
+    cursor: crosshair;
+  }
+
+  .ms-dot-scene__grid:focus-visible {
+    box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.18);
+    border-radius: 2rem;
+  }
+
+  .ms-dot {
+    width: clamp(0.28rem, 0.42vw, 0.48rem);
+    height: clamp(0.28rem, 0.42vw, 0.48rem);
+    justify-self: center;
+    border-radius: 999px;
+    background: var(--dot-color, rgba(9, 9, 11, 0.14));
+    transform: scale(var(--dot-scale, 1));
+    transition:
+      transform 140ms ease,
+      background 140ms ease,
+      box-shadow 140ms ease;
+    box-shadow: 0 0 0 1px rgba(9, 9, 11, 0.03);
+  }
+
+  .ms-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @keyframes ms-particle-float {
+    0% {
+      transform: translate3d(0, 0, 0);
+    }
+
+    50% {
+      transform: translate3d(var(--particle-drift-x), var(--particle-drift-y), 0);
+    }
+
+    100% {
+      transform: translate3d(calc(var(--particle-drift-x) * -0.5), calc(var(--particle-drift-y) * -0.35), 0);
+    }
+  }
+
+  @keyframes ms-particle-pulse {
+    0%,
+    100% {
+      opacity: 0.26;
+    }
+
+    50% {
+      opacity: 0.62;
+    }
+  }
+
+  @keyframes ms-orb-drift {
+    0% {
+      transform: translate3d(0, 0, 0) scale(0.94);
+    }
+
+    100% {
+      transform: translate3d(1.6rem, -1.2rem, 0) scale(1.06);
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .ms-home-hero__copy-stack {
+      width: min(37rem, 48vw);
+    }
+
+    .ms-home-copy--wide {
+      width: min(42rem, 52vw);
+    }
+
+    .ms-parallax-scene__focus {
+      right: 12%;
+      width: min(24rem, 30vw);
+    }
+
+    .ms-parallax-scene__cluster {
+      inset:
+        calc(var(--ms-header-offset) + 0.6rem)
+        -10vw
+        -4vh
+        34vw;
+    }
+
+    .ms-poster-scene__cluster {
+      inset:
+        calc(var(--ms-header-offset) + 0.5rem)
+        -12vw
+        -2rem
+        -8vw;
+      transform: scale(1.08);
+    }
+
+    .ms-video-scene__rail {
+      width: 16rem;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .ms-slide-effect--mobile-glow {
+      opacity: 1;
+      background:
+        radial-gradient(
+          circle at 72% 32%,
+          rgba(255, 255, 255, 0.16) 0%,
+          rgba(var(--color-brand-dark-accent-rgb), 0.2) 14%,
+          rgba(142, 147, 100, 0.12) 26%,
+          rgba(8, 10, 14, 0) 52%
+        );
+      mix-blend-mode: screen;
+      animation: ms-mobile-glow-drift 12s ease-in-out infinite alternate;
+      will-change: transform, opacity;
+    }
+
+    .ms-home-slide--light .ms-slide-effect--mobile-glow {
+      background:
+        radial-gradient(
+          circle at 70% 30%,
+          rgba(255, 255, 255, 0.38) 0%,
+          rgba(var(--color-brand-dark-accent-rgb), 0.12) 14%,
+          rgba(17, 24, 38, 0.06) 26%,
+          rgba(255, 255, 255, 0) 50%
+        );
+      mix-blend-mode: multiply;
+    }
+
+    .ms-home-hero__overlay {
+      padding:
+        calc(var(--ms-header-offset) + 1.1rem)
+        1rem
+        1.2rem;
+    }
+
+    .ms-home-hero__copy-stack {
+      width: min(32rem, 100%);
+      min-height: 19rem;
+      margin-bottom: 5.5rem;
+    }
+
+    .ms-home-copy--wide,
+    .ms-home-copy--video {
+      width: min(32rem, 100%);
+    }
+
+    .ms-home-copy__title {
+      --hero-heading-size: clamp(2.55rem, 9vw, 4.2rem);
+      max-width: 11ch;
+    }
+
+    .ms-home-copy--wide .ms-home-copy__title {
+      max-width: 12.5ch;
+    }
+
+    .ms-parallax-scene__focus {
+      top: 10rem;
+      right: 6%;
+      width: min(18rem, 34vw);
+    }
+
+    .ms-parallax-scene__cluster {
+      inset: auto 1rem 7rem auto;
+      width: min(42vw, 14rem);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.75rem;
+      transform: none;
+    }
+
+    .ms-poster-scene__cluster {
+      inset: auto 1rem 7rem auto;
+      width: min(44vw, 14.5rem);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.75rem;
+      transform: none;
+    }
+
+    .ms-mural-scene__cluster {
+      inset: auto 1rem 7rem auto;
+      width: min(44vw, 14.5rem);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.75rem;
+    }
+
+    .ms-poster {
+      position: relative;
+      top: auto;
+      left: auto;
+      width: 100%;
+      max-width: 100%;
+      margin-bottom: 0;
+    }
+
+    .ms-parallax-scene__cluster .ms-poster:nth-child(n + 3),
+    .ms-poster-scene__cluster .ms-poster:nth-child(n + 3) {
+      display: none;
+    }
+
+    .ms-poster__body {
+      padding: 0.72rem 0.75rem 0.8rem;
+    }
+
+    .ms-poster__title {
+      font-size: 0.88rem;
+    }
+
+    .ms-poster__meta {
+      font-size: 0.68rem;
+      line-height: 1.4;
+    }
+
+    .ms-video-scene__rail {
+      top: auto;
+      right: 1rem;
+      bottom: 8.5rem;
+      width: min(15rem, 38vw);
+    }
+
+    .ms-video-scene__feature {
+      right: 1rem;
+      bottom: 10rem;
+      width: min(11rem, 26vw);
+    }
+
+    .ms-dot-scene__grid {
+      width: min(94vw, 52rem);
+      height: min(70vh, 34rem);
+      gap: clamp(0.34rem, 0.78vw, 0.62rem);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .ms-home-hero__overlay {
+      padding:
+        calc(var(--ms-header-offset) + 1rem)
+        0.9rem
+        1rem;
+    }
+
+    .ms-home-hero__overlay-inner {
+      min-height: calc(100svh - (var(--ms-header-offset) + 2rem));
+    }
+
+    .ms-home-copy,
+    .ms-home-copy[data-active='true'],
+    .ms-home-copy__text {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .ms-home-copy__text {
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .ms-home-copy__badges,
+    .ms-home-copy__actions,
+    .ms-home-hero__nav,
+    .ms-home-hero__controls {
+      gap: 0.55rem;
+    }
+
+    .ms-home-hero__controls {
+      bottom: max(1rem, env(safe-area-inset-bottom));
+      padding: 0.4rem 0.55rem;
+    }
+
+    .ms-home-hero__arrow {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+
+    .ms-parallax-scene__focus {
+      display: none;
+    }
+
+    .ms-parallax-scene__cluster {
+      right: 0.9rem;
+      bottom: 6.4rem;
+      width: min(40vw, 10.5rem);
+      gap: 0.55rem;
+    }
+
+    .ms-poster-scene__cluster {
+      right: 0.9rem;
+      bottom: 6.4rem;
+      width: min(40vw, 10.5rem);
+      gap: 0.55rem;
+    }
+
+    .ms-mural-scene__cluster {
+      right: 0.9rem;
+      bottom: 6.4rem;
+      width: min(40vw, 10.5rem);
+      gap: 0.55rem;
+    }
+
+    .ms-video-scene__rail {
+      display: none;
+    }
+
+    .ms-video-scene__feature {
+      display: none;
+    }
+
+    .ms-dot-scene__grid {
+      width: min(96vw, 32rem);
+      height: min(62vh, 28rem);
+      padding: 0.9rem;
+      gap: 0.34rem;
+    }
+
+    .ms-slide-effect--grid {
+      background-size: 4rem 4rem;
+    }
+
+    .ms-poster__body {
+      padding: 0.62rem 0.66rem 0.72rem;
+    }
+
+    .ms-poster__title {
+      font-size: 0.8rem;
+    }
+
+    .ms-poster__meta {
+      font-size: 0.62rem;
+      line-height: 1.32;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .ms-home-hero {
+      --ms-header-offset: 5rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ms-home-slide,
+    .ms-home-copy,
+    .ms-home-hero__nav-button,
+    .ms-home-hero__arrow,
+    .ms-home-copy__button,
+    .ms-dot,
+    .ms-slide-effect--mobile-glow,
+    .ms-parallax-scene__backdrop img,
+    .ms-parallax-scene__backdrop video,
+    .ms-parallax-scene__focus,
+    .ms-slide-particles span,
+    .ms-slide-orbs span,
+    .ms-dot-scene__reveal img,
+    .ms-dot-scene__reveal video,
+    .ms-poster {
+      transition: none;
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  const msHeroSliders = Array.from(document.querySelectorAll('[data-ms-hero-slider]'));
+
+  msHeroSliders.forEach((msHeroSlider) => {
+    if (!(msHeroSlider instanceof HTMLElement)) {
+      return;
+    }
+
+    const slides = Array.from(msHeroSlider.querySelectorAll('[data-ms-slide]'));
+    const copies = Array.from(msHeroSlider.querySelectorAll('[data-ms-copy]'));
+    const controls = Array.from(msHeroSlider.querySelectorAll('[data-ms-control]'));
+    const previousArrow = msHeroSlider.querySelector('[data-ms-arrow-prev]');
+    const nextArrow = msHeroSlider.querySelector('[data-ms-arrow-next]');
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const autoplaySeconds = Number(msHeroSlider.dataset.autoplaySeconds || 0);
+    const pauseReasons = new Set();
+    let currentIndex = controls.findIndex((control) => control.getAttribute('aria-selected') === 'true');
+    let autoplayTimer = 0;
+
+    if (currentIndex < 0) {
+      currentIndex = 0;
+    }
+
+    const syncArrowState = (nextIndex) => {
+      if (previousArrow instanceof HTMLButtonElement) {
+        previousArrow.disabled = nextIndex <= 0;
+      }
+
+      if (nextArrow instanceof HTMLButtonElement) {
+        nextArrow.disabled = nextIndex >= slides.length - 1;
+      }
+    };
+
+    const syncSlideState = (nextIndex) => {
+      slides.forEach((slide, index) => {
+        const isActive = index === nextIndex;
+        slide.dataset.active = isActive ? 'true' : 'false';
+        slide.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+      });
+
+      copies.forEach((copy, index) => {
+        copy.dataset.active = index === nextIndex ? 'true' : 'false';
+      });
+
+      controls.forEach((control, index) => {
+        const isActive = index === nextIndex;
+        control.dataset.active = isActive ? 'true' : 'false';
+        control.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        control.tabIndex = isActive ? 0 : -1;
+      });
+
+      syncArrowState(nextIndex);
+      msHeroSlider.dataset.theme = slides[nextIndex]?.dataset.theme || 'dark';
+    };
+
+    const stopAutoplay = () => {
+      window.clearTimeout(autoplayTimer);
+    };
+
+    const getSlideDuration = (index) => {
+      const slideDuration = Number(slides[index]?.dataset.durationSeconds || autoplaySeconds || 0);
+
+      return Number.isFinite(slideDuration) ? slideDuration : 0;
+    };
+
+    const queueAutoplay = () => {
+      stopAutoplay();
+
+      const activeSlideDuration = getSlideDuration(currentIndex);
+
+      if (prefersReducedMotion || activeSlideDuration <= 0 || slides.length < 2 || pauseReasons.size > 0) {
+        return;
+      }
+
+      autoplayTimer = window.setTimeout(() => {
+        setActive((currentIndex + 1) % slides.length, false);
+      }, activeSlideDuration * 1000);
+    };
+
+    const pauseAutoplay = (reason) => {
+      pauseReasons.add(reason);
+      stopAutoplay();
+    };
+
+    const resumeAutoplay = (reason) => {
+      pauseReasons.delete(reason);
+      queueAutoplay();
+    };
+
+    const setActive = (nextIndex, moveFocus = false) => {
+      const clampedIndex = Math.min(slides.length - 1, Math.max(0, nextIndex));
+      currentIndex = clampedIndex;
+      syncSlideState(clampedIndex);
+
+      if (moveFocus && controls[clampedIndex] instanceof HTMLElement) {
+        controls[clampedIndex].focus();
+      }
+
+      queueAutoplay();
+    };
+
+    const goRelative = (delta, moveFocus = false) => {
+      const nextIndex = Math.min(slides.length - 1, Math.max(0, currentIndex + delta));
+
+      if (nextIndex === currentIndex) {
+        syncArrowState(currentIndex);
+        return;
+      }
+
+      setActive(nextIndex, moveFocus);
+    };
+
+    controls.forEach((control, index) => {
+      control.addEventListener('click', () => setActive(index, false));
+    });
+
+    if (previousArrow instanceof HTMLButtonElement) {
+      previousArrow.addEventListener('click', () => goRelative(-1, false));
+    }
+
+    if (nextArrow instanceof HTMLButtonElement) {
+      nextArrow.addEventListener('click', () => goRelative(1, false));
+    }
+
+    msHeroSlider.tabIndex = 0;
+    msHeroSlider.addEventListener('keydown', (event) => {
+      if (slides.length < 2) {
+        return;
+      }
+
+      if (event.target instanceof HTMLElement && event.target.closest('[data-ms-dot-grid]')) {
+        return;
+      }
+
+      if (event.key === 'ArrowRight') {
+        goRelative(1, true);
+        event.preventDefault();
+      }
+
+      if (event.key === 'ArrowLeft') {
+        goRelative(-1, true);
+        event.preventDefault();
+      }
+    });
+
+    msHeroSlider.addEventListener('pointerenter', () => pauseAutoplay('pointer'));
+    msHeroSlider.addEventListener('pointerleave', () => resumeAutoplay('pointer'));
+    msHeroSlider.addEventListener('focusin', () => pauseAutoplay('focus'));
+    msHeroSlider.addEventListener('focusout', (event) => {
+      const nextTarget = event.relatedTarget;
+
+      if (!(nextTarget instanceof Node) || !msHeroSlider.contains(nextTarget)) {
+        resumeAutoplay('focus');
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        pauseAutoplay('visibility');
+      } else {
+        resumeAutoplay('visibility');
+      }
+    });
+
+    syncSlideState(currentIndex);
+    queueAutoplay();
+
+    const parallaxScenes = Array.from(msHeroSlider.querySelectorAll('[data-ms-parallax-scene]'));
+
+    parallaxScenes.forEach((scene) => {
+      const updateFromPoint = (clientX, clientY) => {
+        const rect = scene.getBoundingClientRect();
+        const x = ((clientX - rect.left) / rect.width) - 0.5;
+        const y = ((clientY - rect.top) / rect.height) - 0.5;
+
+        scene.style.setProperty('--scene-shift-x', x.toFixed(3));
+        scene.style.setProperty('--scene-shift-y', y.toFixed(3));
+      };
+
+      const reset = () => {
+        scene.style.setProperty('--scene-shift-x', '0');
+        scene.style.setProperty('--scene-shift-y', '0');
+      };
+
+      scene.addEventListener('pointermove', (event) => updateFromPoint(event.clientX, event.clientY));
+      scene.addEventListener('pointerleave', reset);
+      reset();
+    });
+
+    const dotScenes = Array.from(msHeroSlider.querySelectorAll('[data-ms-dot-scene]'));
+
+    dotScenes.forEach((scene) => {
+      const grid = scene.querySelector('[data-ms-dot-grid]');
+      const dots = Array.from(scene.querySelectorAll('[data-ms-dot]'));
+
+      if (!(grid instanceof HTMLElement) || dots.length === 0) {
+        return;
+      }
+
+      const cols = Number(grid.dataset.dotCols || 28);
+      const rows = Number(grid.dataset.dotRows || 14);
+      let activeCol = Math.floor(cols / 2);
+      let activeRow = Math.floor(rows / 2);
+
+      const reset = () => {
+        scene.style.setProperty('--reveal-strength', '0');
+        scene.style.setProperty('--pointer-x', '50%');
+        scene.style.setProperty('--pointer-y', '50%');
+
+        dots.forEach((dot) => {
+          dot.style.setProperty('--dot-scale', '1');
+          dot.style.setProperty('--dot-color', 'rgba(9, 9, 11, 0.14)');
+        });
+      };
+
+      const activate = (col, row) => {
+        activeCol = Math.min(cols - 1, Math.max(0, col));
+        activeRow = Math.min(rows - 1, Math.max(0, row));
+
+        scene.style.setProperty('--reveal-strength', '1');
+        scene.style.setProperty('--pointer-x', `${10 + ((activeCol / Math.max(cols - 1, 1)) * 80)}%`);
+        scene.style.setProperty('--pointer-y', `${10 + ((activeRow / Math.max(rows - 1, 1)) * 80)}%`);
+
+        dots.forEach((dot) => {
+          const dotCol = Number(dot.dataset.col || 0);
+          const dotRow = Number(dot.dataset.row || 0);
+          const distance = Math.hypot(dotCol - activeCol, dotRow - activeRow);
+          const scale = Math.max(1, 2.8 - (distance * 0.26));
+          let color = `rgba(9, 9, 11, ${Math.max(0.08, 0.28 - (distance * 0.015)).toFixed(2)})`;
+
+          if (distance < 1.2) {
+            color = 'rgba(37, 99, 235, 0.92)';
+          } else if (distance < 2.8) {
+            color = 'rgba(17, 24, 38, 0.82)';
+          }
+
+          dot.style.setProperty('--dot-scale', scale.toFixed(2));
+          dot.style.setProperty('--dot-color', color);
+        });
+      };
+
+      const activateFromPoint = (clientX, clientY) => {
+        const rect = grid.getBoundingClientRect();
+        const x = (clientX - rect.left) / rect.width;
+        const y = (clientY - rect.top) / rect.height;
+        const col = Math.round(Math.min(1, Math.max(0, x)) * (cols - 1));
+        const row = Math.round(Math.min(1, Math.max(0, y)) * (rows - 1));
+        activate(col, row);
+      };
+
+      grid.addEventListener('pointerenter', (event) => activateFromPoint(event.clientX, event.clientY));
+      grid.addEventListener('pointermove', (event) => activateFromPoint(event.clientX, event.clientY));
+      grid.addEventListener('pointerdown', (event) => activateFromPoint(event.clientX, event.clientY));
+      grid.addEventListener('pointerleave', reset);
+      grid.addEventListener('focus', () => activate(activeCol, activeRow));
+      grid.addEventListener('blur', reset);
+      grid.addEventListener('keydown', (event) => {
+        if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+          return;
+        }
+
+        event.preventDefault();
+
+        if (event.key === 'ArrowUp') {
+          activate(activeCol, activeRow - 1);
+        }
+
+        if (event.key === 'ArrowDown') {
+          activate(activeCol, activeRow + 1);
+        }
+
+        if (event.key === 'ArrowLeft') {
+          activate(activeCol - 1, activeRow);
+        }
+
+        if (event.key === 'ArrowRight') {
+          activate(activeCol + 1, activeRow);
+        }
+
+        if (event.key === 'Home') {
+          activate(0, 0);
+        }
+
+        if (event.key === 'End') {
+          activate(cols - 1, rows - 1);
+        }
+      });
+
+      reset();
+    });
+  });
+</script>

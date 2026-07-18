@@ -1,0 +1,17 @@
+---
+import Button from '../ui/Button.astro';
+
+interface Props {
+  text: string;
+  href: string;
+  variant?: 'primary' | 'secondary';
+}
+
+const { text, href, variant = 'primary' } = Astro.props;
+---
+
+<div class="my-8 text-center">
+  <Button href={href} variant={variant}>
+    {text}
+  </Button>
+</div>

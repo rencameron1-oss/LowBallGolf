@@ -1,0 +1,173 @@
+---
+import Container from '@bands/ui/components/ui/Container.astro';
+import SectionHeading from '@bands/ui/components/ui/SectionHeading.astro';
+
+interface Tab {
+  label?: string;
+  image?: string;
+  image_alt?: string;
+  heading?: string;
+  body?: string;
+  cta_text?: string;
+  cta_url?: string;
+  cta_open_in_new_tab?: boolean;
+}
+
+interface Props {
+  kicker?: string;
+  heading?: string;
+  subheading?: string;
+  layout?: string;
+  tabs?: Tab[];
+  block_id?: string;
+}
+
+const {
+  kicker,
+  heading,
+  subheading,
+  layout = 'image-right',
+  tabs = [],
+  block_id,
+} = Astro.props;
+
+const groupId = block_id || `tabbed-${Math.random().toString(36).slice(2, 9)}`;
+const imageOnLeft = layout === 'image-left';
+---
+
+{tabs.length > 0 && (
+  <section class="py-20 md:py-28">
+    <Container width="wide">
+      {(heading || subheading || kicker) && (
+        <div class="reveal mb-8">
+          <SectionHeading kicker={kicker} heading={heading || ''} subheading={subheading} align="center" />
+        </div>
+      )}
+
+      <div class="border-b border-brand-border/40">
+        <div role="tablist" class="flex flex-wrap justify-center gap-x-8 gap-y-3 px-4">
+          {tabs.map((tab, index) => (
+            <button
+              type="button"
+              role="tab"
+              id={`${groupId}-tab-${index}`}
+              aria-controls={`${groupId}-panel-${index}`}
+              aria-selected={index === 0 ? 'true' : 'false'}
+              tabindex={index === 0 ? 0 : -1}
+              data-tab-group={groupId}
+              data-tab-index={index}
+              class:list={[
+                'relative py-4 text-sm md:text-base font-semibold transition-colors',
+                index === 0
+                  ? 'text-brand-text after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-[2px] after:bg-brand-accent'
+                  : 'text-brand-muted hover:text-brand-text',
+              ]}
+            >
+              {tab.label || `Tab ${index + 1}`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div class="mt-10 md:mt-14">
+        {tabs.map((tab, index) => (
+          <div
+            role="tabpanel"
+            id={`${groupId}-panel-${index}`}
+            aria-labelledby={`${groupId}-tab-${index}`}
+            data-tab-panel-group={groupId}
+            data-tab-panel-index={index}
+            hidden={index !== 0}
+            class="reveal"
+          >
+            <div class:list={['grid gap-10 md:gap-16 md:grid-cols-2 items-center']}>
+              {tab.image && (
+                <div class:list={['overflow-hidden rounded-[1.8rem] bg-brand-surface-alt', imageOnLeft ? 'md:order-1' : 'md:order-2']}>
+                  <img
+                    src={tab.image}
+                    alt={tab.image_alt || tab.heading || tab.label || ''}
+                    class="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              )}
+              <div class:list={['flex flex-col gap-5', tab.image ? (imageOnLeft ? 'md:order-2' : 'md:order-1') : 'md:col-span-2 text-center md:mx-auto md:max-w-3xl']}>
+                {tab.heading && (
+                  <h3 class="text-3xl md:text-4xl font-heading font-semibold tracking-tight text-brand-text">
+                    {tab.heading}
+                  </h3>
+                )}
+                {tab.body && (
+                  <p class="text-base md:text-lg leading-relaxed text-brand-muted whitespace-pre-line">
+                    {tab.body}
+                  </p>
+                )}
+                {tab.cta_text && tab.cta_url && (
+                  <div class="pt-2">
+                    <a
+                      href={tab.cta_url}
+                      target={tab.cta_open_in_new_tab ? '_blank' : undefined}
+                      rel={tab.cta_open_in_new_tab ? 'noopener noreferrer' : undefined}
+                      class="inline-flex items-center gap-2 rounded-full bg-brand-accent px-7 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-brand-accent-light"
+                    >
+                      {tab.cta_text}
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Container>
+  </section>
+)}
+
+<script is:inline define:vars={{ groupId }}>
+  (function() {
+    const tabs = document.querySelectorAll(`[data-tab-group="${groupId}"]`);
+    const panels = document.querySelectorAll(`[data-tab-panel-group="${groupId}"]`);
+    if (!tabs.length) return;
+
+    const activate = (i) => {
+      tabs.forEach((t, idx) => {
+        const active = idx === i;
+        t.setAttribute('aria-selected', active ? 'true' : 'false');
+        t.setAttribute('tabindex', active ? '0' : '-1');
+        t.classList.toggle('text-brand-text', active);
+        t.classList.toggle('text-brand-muted', !active);
+        t.classList.toggle('hover:text-brand-text', !active);
+        t.classList.toggle("after:absolute", active);
+        t.classList.toggle("after:bottom-[-1px]", active);
+        t.classList.toggle("after:left-0", active);
+        t.classList.toggle("after:right-0", active);
+        t.classList.toggle("after:h-[2px]", active);
+        t.classList.toggle("after:bg-brand-accent", active);
+      });
+      panels.forEach((p, idx) => {
+        if (idx === i) p.removeAttribute('hidden');
+        else p.setAttribute('hidden', '');
+      });
+    };
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => activate(i));
+      tab.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          const next = (i + 1) % tabs.length;
+          activate(next);
+          tabs[next].focus();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const prev = (i - 1 + tabs.length) % tabs.length;
+          activate(prev);
+          tabs[prev].focus();
+        }
+      });
+    });
+  })();
+</script>

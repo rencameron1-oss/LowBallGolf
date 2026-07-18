@@ -1,0 +1,52 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import HeroSection from '../../components/hero/HeroSection.astro';
+import HeroSliderBlock from '@bands/ui/components/blocks/HeroSliderBlock.astro';
+import BlockRenderer from '../../components/blocks/BlockRenderer.astro';
+import Container from '@bands/ui/components/ui/Container.astro';
+import TinaVisualEditing from '../../components/tina/TinaVisualEditing.astro';
+import { getCollection, render } from 'astro:content';
+
+const page = (await getCollection('pages')).find((entry) => entry.id === 'work');
+const Content = page ? (await render(page)).Content : null;
+const pageHeroSlider = page?.data.hero_slider;
+const pageHeroSlides = pageHeroSlider?.slides ?? [];
+const pageOgImage = pageHeroSlides[0]?.background_image || pageHeroSlides[0]?.image || page?.data.hero_image;
+---
+
+<PageLayout
+  title={page?.data.seo_title || page?.data.title || 'Selected Work'}
+  description={page?.data.seo_description}
+  ogImage={pageOgImage}
+>
+  <TinaVisualEditing collection="page" relativePath="work.md" />
+
+  {pageHeroSlides.length > 0 ? (
+    <HeroSliderBlock {...pageHeroSlider} topOfPage={true} />
+  ) : (
+    <HeroSection
+      heading={page?.data.hero_heading || 'Selected Work'}
+      subheading={page?.data.hero_subheading}
+      image={page?.data.hero_image}
+    />
+  )}
+
+  {(page?.data.intro || Content) && (
+    <section class="py-16 md:py-24">
+      <Container width="narrow">
+        {page?.data.intro && (
+          <p class="reveal text-lg md:text-xl text-brand-muted leading-relaxed">
+            {page.data.intro}
+          </p>
+        )}
+        {Content && (
+          <div class="prose prose-lg max-w-none mt-10 reveal reveal-delay-1">
+            <Content />
+          </div>
+        )}
+      </Container>
+    </section>
+  )}
+
+  <BlockRenderer blocks={page?.data.blocks || []} />
+</PageLayout>

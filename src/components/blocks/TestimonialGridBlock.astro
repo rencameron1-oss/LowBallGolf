@@ -1,0 +1,76 @@
+---
+import Container from '@bands/ui/components/ui/Container.astro';
+import SectionHeading from '@bands/ui/components/ui/SectionHeading.astro';
+
+interface TestimonialItem {
+  meta?: string;
+  quote?: string;
+  author_name?: string;
+  author_role?: string;
+  organisation?: string;
+}
+
+interface Props {
+  kicker?: string;
+  heading?: string;
+  subheading?: string;
+  items?: TestimonialItem[];
+  columns?: number | string;
+}
+
+const {
+  kicker,
+  heading,
+  subheading,
+  items = [],
+  columns = 3,
+} = Astro.props;
+
+const normalizedColumns = Number(columns) || 3;
+const colClasses: Record<number, string> = {
+  2: 'grid-cols-1 md:grid-cols-2',
+  3: 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3',
+  4: 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4',
+};
+---
+
+{items.length > 0 && (
+  <section class="py-20 md:py-28">
+    <Container width="wide">
+      {(heading || subheading || kicker) && (
+        <div class="reveal">
+          <SectionHeading kicker={kicker} heading={heading || ''} subheading={subheading} />
+        </div>
+      )}
+
+      <div class:list={['grid gap-6 md:gap-8', colClasses[normalizedColumns] || colClasses[3]]}>
+        {items.map((item, index) => (
+          <article class:list={['reveal rounded-[1.8rem] border border-brand-border/40 bg-brand-surface p-7 shadow-[0_20px_55px_rgba(15,23,42,0.06)]', `reveal-delay-${Math.min((index % 4) + 1, 4)}`]}>
+            {item.meta && (
+              <p class="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-brand-accent/80">
+                {item.meta}
+              </p>
+            )}
+            {item.quote && (
+              <blockquote class="text-lg leading-relaxed text-brand-text">
+                &ldquo;{item.quote}&rdquo;
+              </blockquote>
+            )}
+            {(item.author_name || item.author_role || item.organisation) && (
+              <div class="mt-6 border-t border-brand-border/40 pt-5">
+                {item.author_name && (
+                  <strong class="block text-base font-semibold text-brand-text">
+                    {item.author_name}
+                  </strong>
+                )}
+                <p class="mt-1 text-sm leading-relaxed text-brand-muted">
+                  {[item.author_role, item.organisation].filter(Boolean).join(', ')}
+                </p>
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    </Container>
+  </section>
+)}

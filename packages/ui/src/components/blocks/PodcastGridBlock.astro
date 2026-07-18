@@ -1,0 +1,67 @@
+---
+import Container from '../ui/Container.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+import PodcastCard from '../podcasts/PodcastCard.astro';
+import { getCollection } from 'astro:content';
+
+interface Props {
+  heading?: string;
+  subheading?: string;
+  series_filter?: string;
+  limit?: number;
+  layout?: string;
+  cta_text?: string;
+  cta_url?: string;
+}
+
+const {
+  heading,
+  subheading,
+  series_filter = 'all',
+  limit = 4,
+  layout = 'grid',
+  cta_text,
+  cta_url,
+} = Astro.props;
+
+let episodes = (await getCollection('podcasts'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+if (series_filter && series_filter !== 'all') {
+  episodes = episodes.filter((e) => e.data.series === series_filter);
+}
+
+episodes = episodes.slice(0, limit);
+---
+
+<section class="py-10 md:py-14">
+  <Container width="wide">
+    {heading && <SectionHeading heading={heading} subheading={subheading} />}
+
+    <div class:list={[
+      layout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-5',
+    ]}>
+      {episodes.map((episode) => (
+        <PodcastCard
+          title={episode.data.title}
+          slug={episode.id}
+          date={episode.data.date}
+          series={episode.data.series}
+          guest={episode.data.guest}
+          hero_image={episode.data.hero_image}
+          duration={episode.data.duration}
+        />
+      ))}
+    </div>
+
+    {cta_text && cta_url && (
+      <div class="mt-6">
+        <a href={cta_url} class="inline-flex items-center text-sm font-ui font-semibold text-brand-accent hover:text-brand-accent-light transition-colors">
+          {cta_text}
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    )}
+  </Container>
+</section>

@@ -1,0 +1,165 @@
+---
+import { getCollection } from 'astro:content';
+import Container from '@bands/ui/components/ui/Container.astro';
+import SectionHeading from '@bands/ui/components/ui/SectionHeading.astro';
+
+interface Props {
+  block?: Record<string, any>;
+}
+
+const { block = {} } = Astro.props;
+const template = block._template || block.__typename || '';
+
+const getPosts = async () => {
+  try {
+    const posts = await getCollection('posts' as any);
+    return posts
+      .filter((entry: any) => !entry.data?.draft)
+      .filter((entry: any) => !block.category || entry.data?.category === block.category)
+      .sort((a: any, b: any) => {
+        const aDate = a.data?.pubDate || a.data?.date || new Date(0);
+        const bDate = b.data?.pubDate || b.data?.date || new Date(0);
+        return block.sort === 'oldest'
+          ? aDate.getTime() - bDate.getTime()
+          : bDate.getTime() - aDate.getTime();
+      })
+      .slice(0, Number(block.limit) || (template === 'articleFeaturedBlock' ? 1 : 6));
+  } catch {
+    return [];
+  }
+};
+
+const getPodcasts = async () => {
+  try {
+    const episodes = await getCollection('podcasts' as any);
+    return episodes
+      .filter((entry: any) => !entry.data?.draft)
+      .filter((entry: any) => !block.series || entry.data?.series === block.series)
+      .sort((a: any, b: any) => b.data?.date?.getTime?.() - a.data?.date?.getTime?.())
+      .slice(0, Number(block.limit) || 3);
+  } catch {
+    return [];
+  }
+};
+
+const posts = template.startsWith('article') ? await getPosts() : [];
+const podcasts = template.startsWith('podcast') || template === 'podcastGridBlock' ? await getPodcasts() : [];
+const categories = block.categories || [];
+const tabs = block.tabs || [];
+const testimonials = block.items || [];
+const songs = block.songs || [];
+---
+
+{template === 'pullQuoteBlock' && block.quote && (
+  <section class="py-16 md:py-20">
+    <Container width="narrow">
+      <figure class="border-l-4 border-brand-accent pl-6">
+        <blockquote class="text-2xl md:text-3xl font-heading leading-snug text-brand-text">{block.quote}</blockquote>
+        {block.attribution && <figcaption class="mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-brand-muted">{block.attribution}</figcaption>}
+      </figure>
+    </Container>
+  </section>
+)}
+
+{template === 'tabbedFeatureBlock' && tabs.length > 0 && (
+  <section class="py-20 md:py-28">
+    <Container width="wide">
+      <SectionHeading kicker={block.kicker} heading={block.heading || ''} subheading={block.subheading} align="center" />
+      <div class="mt-10 grid gap-6 md:grid-cols-2">
+        {tabs.map((tab: any) => (
+          <article class="rounded-3xl border border-brand-border/40 bg-brand-surface p-6">
+            {tab.image && <img src={tab.image} alt={tab.image_alt || tab.heading || tab.label || ''} class="mb-5 aspect-video w-full rounded-2xl object-cover" loading="lazy" />}
+            <p class="text-sm font-semibold uppercase tracking-[0.16em] text-brand-accent">{tab.label}</p>
+            {tab.heading && <h3 class="mt-2 text-2xl font-heading text-brand-text">{tab.heading}</h3>}
+            {tab.body && <p class="mt-3 whitespace-pre-line text-brand-muted">{tab.body}</p>}
+          </article>
+        ))}
+      </div>
+    </Container>
+  </section>
+)}
+
+{template === 'testimonialGridBlock' && testimonials.length > 0 && (
+  <section class="py-20 md:py-28">
+    <Container width="wide">
+      <SectionHeading kicker={block.kicker} heading={block.heading || ''} subheading={block.subheading} />
+      <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {testimonials.map((item: any) => (
+          <article class="rounded-3xl border border-brand-border/40 bg-brand-surface p-6">
+            {item.quote && <blockquote class="text-lg leading-relaxed text-brand-text">"{item.quote}"</blockquote>}
+            {(item.author_name || item.author_role || item.organisation) && <p class="mt-5 text-sm text-brand-muted"><strong class="text-brand-text">{item.author_name}</strong>{[item.author_role, item.organisation].filter(Boolean).join(', ') && ` - ${[item.author_role, item.organisation].filter(Boolean).join(', ')}`}</p>}
+          </article>
+        ))}
+      </div>
+    </Container>
+  </section>
+)}
+
+{template === 'songListBlock' && songs.length > 0 && (
+  <section class="py-16 md:py-20">
+    <Container width="wide">
+      <SectionHeading heading={block.heading || ''} subheading={block.subheading} />
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {songs.map((song: any) => (
+          <div class="rounded-2xl border border-brand-border/40 bg-brand-surface p-5">
+            <h3 class="font-semibold text-brand-text">{song.title}</h3>
+            {(song.artist || song.year) && <p class="mt-1 text-sm text-brand-muted">{[song.artist, song.year].filter(Boolean).join(' - ')}</p>}
+            {song.notes && <p class="mt-3 text-sm text-brand-muted">{song.notes}</p>}
+          </div>
+        ))}
+      </div>
+    </Container>
+  </section>
+)}
+
+{template === 'categoryNavBlock' && categories.length > 0 && (
+  <section class="py-10">
+    <Container width="wide">
+      {block.heading && <h2 class="mb-5 text-2xl font-heading text-brand-text">{block.heading}</h2>}
+      <nav class="flex flex-wrap gap-3" aria-label={block.heading || 'Categories'}>
+        {categories.map((category: any) => (
+          <a href={`${block.base_url || '/posts'}/${category.slug || ''}`} class="rounded-full border border-brand-border/60 px-4 py-2 text-sm font-semibold text-brand-text transition-colors hover:border-brand-accent hover:text-brand-accent">
+            {category.label}
+          </a>
+        ))}
+      </nav>
+    </Container>
+  </section>
+)}
+
+{template.startsWith('article') && posts.length > 0 && (
+  <section class="py-20 md:py-28">
+    <Container width="wide">
+      <SectionHeading kicker={block.kicker} heading={block.heading || ''} subheading={block.subheading} />
+      <div class:list={['grid gap-6', template === 'articleFeaturedBlock' ? 'md:grid-cols-1' : 'md:grid-cols-2 xl:grid-cols-3']}>
+        {posts.map((post: any) => (
+          <a href={`/posts/${post.id}/`} class="group overflow-hidden rounded-3xl border border-brand-border/40 bg-brand-surface transition-transform hover:-translate-y-1">
+            {(block.show_images !== false && post.data?.hero_image) && <img src={post.data.hero_image} alt={post.data.title} class="aspect-[16/10] w-full object-cover" loading="lazy" />}
+            <div class="p-6">
+              {block.show_category !== false && post.data?.category && <p class="text-xs font-semibold uppercase tracking-[0.16em] text-brand-accent">{post.data.category}</p>}
+              <h3 class="mt-2 text-2xl font-heading text-brand-text">{post.data?.title}</h3>
+              {(block.show_excerpt !== false && (post.data?.excerpt || post.data?.description)) && <p class="mt-3 text-brand-muted">{post.data.excerpt || post.data.description}</p>}
+            </div>
+          </a>
+        ))}
+      </div>
+    </Container>
+  </section>
+)}
+
+{(template === 'podcastFeaturedBlock' || template === 'podcastGridBlock') && podcasts.length > 0 && (
+  <section class="py-20 md:py-28">
+    <Container width="wide">
+      <SectionHeading kicker={block.kicker} heading={block.heading || ''} subheading={block.subheading} />
+      <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {podcasts.map((episode: any) => (
+          <a href={`/podcasts/${episode.id}/`} class="rounded-3xl border border-brand-border/40 bg-brand-surface p-6 transition-transform hover:-translate-y-1">
+            {episode.data?.hero_image && <img src={episode.data.hero_image} alt={episode.data.title} class="mb-5 aspect-video w-full rounded-2xl object-cover" loading="lazy" />}
+            <h3 class="text-2xl font-heading text-brand-text">{episode.data?.title}</h3>
+            {(episode.data?.description && block.show_description !== false) && <p class="mt-3 text-brand-muted">{episode.data.description}</p>}
+          </a>
+        ))}
+      </div>
+    </Container>
+  </section>
+)}

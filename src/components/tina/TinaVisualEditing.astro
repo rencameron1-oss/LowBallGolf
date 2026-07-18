@@ -1,0 +1,208 @@
+---
+interface Props {
+  collection: string;
+  relativePath: string;
+}
+
+const { collection, relativePath } = Astro.props;
+const tinaGraphqlUrl = import.meta.env.PUBLIC_TINA_GRAPHQL_URL || 'http://localhost:4010/graphql';
+---
+
+<script define:vars={{ collection, relativePath, tinaGraphqlUrl }}>
+  if (window.self !== window.top) {
+    (async () => {
+      const HERO_SLIDE_FIELDS = `
+        name
+        tab_label
+        duration_seconds
+        layout
+        theme
+        effects
+        eyebrow
+        heading
+        heading_font
+        heading_size
+        subheading
+        background_image
+        image
+        video_url
+        video_poster_image
+        badges
+        panels {
+          kind
+          variant
+          label
+          title
+          meta
+          image
+          top
+          left
+          width
+          rotate
+        }
+        graffiti {
+          text
+          top
+          left
+          rotate
+        }
+        primary_cta_text
+        primary_cta_url
+        secondary_cta_text
+        secondary_cta_url
+      `;
+
+      const HERO_SLIDER_FIELDS = `
+        autoplay_seconds
+        primary_cta_text
+        primary_cta_url
+        secondary_cta_text
+        secondary_cta_url
+        slides {
+          ${HERO_SLIDE_FIELDS}
+        }
+      `;
+
+      const buildBlockSelections = () => `
+        blocks {
+          __typename
+        }
+      `;
+
+      const PAGE_QUERY = `query page($relativePath: String!) {
+  page(relativePath: $relativePath) {
+    ... on Document {
+      _sys { relativePath }
+      id
+    }
+    ... on Page {
+      title
+      hero_heading
+      hero_subheading
+      hero_image
+      hero_slider {
+        ${HERO_SLIDER_FIELDS}
+      }
+      intro
+      ${buildBlockSelections()}
+      body
+      seo_title
+      seo_description
+    }
+  }
+}`;
+
+      const HOME_QUERY = `query home($relativePath: String!) {
+  home(relativePath: $relativePath) {
+    ... on Document {
+      _sys { relativePath }
+      id
+    }
+    ... on Home {
+      title
+      hero {
+        ${HERO_SLIDER_FIELDS}
+      }
+      ${buildBlockSelections()}
+      seo_title
+      seo_description
+    }
+  }
+}`;
+
+      const CASE_STUDY_QUERY = `query caseStudy($relativePath: String!) {
+  caseStudy(relativePath: $relativePath) {
+    ... on Document {
+      _sys { relativePath }
+      id
+    }
+    ... on CaseStudy {
+      title
+      client
+      year
+      role
+      summary
+      hero_image
+      featured
+      order
+      services
+      stats {
+        value
+        label
+      }
+      external_url
+      body
+      seo_title
+      seo_description
+    }
+  }
+}`;
+
+      const POST_QUERY = `query post($relativePath: String!) {
+  post(relativePath: $relativePath) {
+    ... on Document {
+      _sys { relativePath }
+      id
+    }
+    ... on Post {
+      title
+      draft
+      pubDate
+      updatedDate
+      author
+      excerpt
+      hero_image
+      category
+      tags
+      featured
+      order
+      ${buildBlockSelections()}
+      related_posts
+      seo_title
+      seo_description
+      body
+    }
+  }
+}`;
+
+      const queryMap = {
+        page: PAGE_QUERY,
+        home: HOME_QUERY,
+        post: POST_QUERY,
+        caseStudy: CASE_STUDY_QUERY,
+      };
+
+      const query = queryMap[collection];
+      if (!query) return;
+
+      function hashFromQuery(input) {
+        let hash = 5381;
+        for (let i = 0; i < input.length; i++) {
+          hash = (hash << 5) + hash + input.charCodeAt(i);
+          hash |= 0;
+        }
+        return String(hash >>> 0);
+      }
+
+      const variables = { relativePath };
+
+      try {
+        const res = await fetch(tinaGraphqlUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, variables }),
+        });
+        const result = await res.json();
+        if (result.errors || !result.data) return;
+
+        const id = hashFromQuery(JSON.stringify({ query, variables }));
+        parent.postMessage(
+          { type: 'open', id, query, variables, data: result.data },
+          window.location.origin
+        );
+      } catch {
+        // Tina local GraphQL unavailable.
+      }
+    })();
+  }
+</script>

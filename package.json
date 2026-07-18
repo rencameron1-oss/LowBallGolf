@@ -1,0 +1,41 @@
+{
+  "name": "agentic-site-template",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A transportable Astro, TinaCMS, GitHub and Cloudflare website template for novice agentic coders.",
+  "license": "MIT",
+  "author": "Michael Smedley",
+  "engines": {
+    "node": ">=24.18.0 <25",
+    "npm": ">=11"
+  },
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "configure": "node scripts/configure-site.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "dev": "cross-env TINA_PUBLIC_IS_LOCAL=true ASTRO_DEV_BACKGROUND=0 tinacms dev --datalayer-port 9010 --port 4010 -c \"astro dev --port 4330 --host 0.0.0.0\"",
+    "dev:astro": "cross-env ASTRO_DEV_BACKGROUND=0 astro dev --port 4330 --host 0.0.0.0",
+    "build:cms": "cross-env TINA_PUBLIC_IS_LOCAL=true tinacms build --local --skip-cloud-checks --datalayer-port 9110 --port 4110",
+    "build": "npm run build:cms && astro build",
+    "preview": "astro preview --port 4331 --host 0.0.0.0",
+    "deploy": "npm run build && wrangler deploy",
+    "cf:login": "wrangler login",
+    "cf:whoami": "wrangler whoami",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "3.7.3",
+    "@bands/ui": "file:./packages/ui",
+    "astro": "7.1.1",
+    "tinacms": "3.11.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "0.5.20",
+    "@tailwindcss/vite": "4.3.3",
+    "@tinacms/cli": "2.5.6",
+    "cross-env": "10.1.0",
+    "vite": "8.1.5",
+    "wrangler": "4.112.0"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Main Navigation",
+  "items": [
+    { "label": "Home", "href": "/" },
+    { "label": "About", "href": "/about" },
+    {
+      "label": "Workflows",
+      "href": "/work",
+      "children": [
+        { "label": "Workflow Overview", "href": "/work" },
+        { "label": "Local Editing", "href": "/work/local-editing" },
+        { "label": "Cloudflare Deploy", "href": "/work/cloudflare-deploy" }
+      ]
+    },
+    { "label": "Guides", "href": "/writing" },
+    { "label": "Contact", "href": "/contact" }
+  ]
+}

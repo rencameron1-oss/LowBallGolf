@@ -1,0 +1,100 @@
+---
+import CategoryBadge from '../ui/CategoryBadge.astro';
+
+interface Props {
+  title: string;
+  slug: string;
+  date: Date;
+  author?: string;
+  description?: string;
+  hero_image?: string;
+  hero_image_alt?: string;
+  category?: string;
+  variant?: 'large' | 'compact';
+}
+
+const {
+  title,
+  slug,
+  date,
+  author,
+  description,
+  hero_image,
+  hero_image_alt,
+  category,
+  variant = 'compact',
+} = Astro.props;
+
+const formattedDate = date.toLocaleDateString('en-AU', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+const href = `/articles/${slug}`;
+---
+
+{variant === 'large' ? (
+  <article class="group">
+    <a href={href} class="block">
+      {hero_image && (
+        <div class="relative aspect-[4/3] overflow-hidden rounded-lg mb-4">
+          <img
+            src={hero_image}
+            alt={hero_image_alt || title}
+            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+          {category && (
+            <div class="absolute top-3 left-3">
+              <CategoryBadge category={category} size="md" linked={false} />
+            </div>
+          )}
+        </div>
+      )}
+      <h3 class="text-xl md:text-2xl font-heading font-bold text-brand-text group-hover:text-brand-accent transition-colors leading-tight">
+        {title}
+      </h3>
+    </a>
+    {description && (
+      <p class="mt-2 text-sm text-brand-muted font-ui line-clamp-2">{description}</p>
+    )}
+    <div class="mt-3 flex items-center gap-2 text-xs text-brand-muted font-ui">
+      {author && <span>{author}</span>}
+      {author && <span>&middot;</span>}
+      <time datetime={date.toISOString()}>{formattedDate}</time>
+    </div>
+  </article>
+) : (
+  <article class="group flex gap-4">
+    {hero_image && (
+      <a href={href} class="flex-shrink-0">
+        <div class="w-24 h-24 md:w-28 md:h-28 rounded-lg overflow-hidden">
+          <img
+            src={hero_image}
+            alt={hero_image_alt || title}
+            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+        </div>
+      </a>
+    )}
+    <div class="flex-1 min-w-0">
+      {category && (
+        <div class="mb-1">
+          <CategoryBadge category={category} size="sm" />
+        </div>
+      )}
+      <a href={href}>
+        <h3 class="text-sm md:text-base font-heading font-bold text-brand-text group-hover:text-brand-accent transition-colors leading-snug line-clamp-2">
+          {title}
+        </h3>
+      </a>
+      <div class="mt-1.5 flex items-center gap-2 text-xs text-brand-muted font-ui">
+        {author && <span>{author}</span>}
+        {author && <span>&middot;</span>}
+        <time datetime={date.toISOString()}>{formattedDate}</time>
+      </div>
+    </div>
+  </article>
+)}

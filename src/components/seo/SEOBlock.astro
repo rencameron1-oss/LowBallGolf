@@ -1,0 +1,19 @@
+---
+import Container from '@bands/ui/components/ui/Container.astro';
+
+interface Props {
+  heading: string;
+  content: string;
+}
+
+const { heading, content } = Astro.props;
+---
+
+<section class="py-16 bg-brand-surface">
+  <Container width="narrow">
+    <h2 class="text-2xl font-heading font-bold text-brand-text mb-6">{heading}</h2>
+    <div class="prose prose-invert prose-brand max-w-none text-brand-muted leading-relaxed">
+      <p>{content}</p>
+    </div>
+  </Container>
+</section>

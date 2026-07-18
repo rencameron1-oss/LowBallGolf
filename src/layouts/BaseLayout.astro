@@ -1,0 +1,133 @@
+---
+import '../styles/global.css';
+import siteConfig from '../config/site';
+import SiteStructuredData from '../components/seo/SiteStructuredData.astro';
+import { getResolvedSiteSettings } from '../utils/siteSettings';
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  canonicalUrl?: string;
+  noIndex?: boolean;
+  bodyClass?: string;
+  ogType?: 'website' | 'article';
+  articleMeta?: {
+    publishedTime?: string;
+    modifiedTime?: string;
+    author?: string;
+    tags?: string[];
+  };
+}
+
+const {
+  title,
+  description = siteConfig.description,
+  ogImage = siteConfig.seo.defaultOgImage,
+  canonicalUrl,
+  noIndex = false,
+  bodyClass = '',
+  ogType = 'website',
+  articleMeta,
+} = Astro.props;
+
+const pageTitle = siteConfig.seo.titleTemplate.replace('%s', title);
+const resolvedOgImage = new URL(ogImage, siteConfig.url).toString();
+const resolvedCanonical = canonicalUrl || new URL(Astro.url.pathname, siteConfig.url).toString();
+const {
+  settings,
+  brand: { stylesheetUrl, cssText: brandCssText },
+} = getResolvedSiteSettings();
+---
+
+<!doctype html>
+<html lang={siteConfig.locale} style={brandCssText}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={resolvedCanonical} />
+    {noIndex && <meta name="robots" content="noindex,nofollow" />}
+
+    <!-- Open Graph -->
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={resolvedOgImage} />
+    <meta property="og:url" content={resolvedCanonical} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:locale" content={siteConfig.locale} />
+    <meta property="og:site_name" content={siteConfig.name} />
+    {ogType === 'article' && articleMeta?.publishedTime && (
+      <meta property="article:published_time" content={articleMeta.publishedTime} />
+    )}
+    {ogType === 'article' && articleMeta?.modifiedTime && (
+      <meta property="article:modified_time" content={articleMeta.modifiedTime} />
+    )}
+    {ogType === 'article' && articleMeta?.author && (
+      <meta property="article:author" content={articleMeta.author} />
+    )}
+    {ogType === 'article' && articleMeta?.tags?.map((tag) => (
+      <meta property="article:tag" content={tag} />
+    ))}
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={resolvedOgImage} />
+
+    <!-- Brand fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href={stylesheetUrl} rel="stylesheet" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <!-- Google Analytics (GA4) -->
+    {import.meta.env.PUBLIC_GA_ID && (
+      <>
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${import.meta.env.PUBLIC_GA_ID}`}></script>
+        <script define:vars={{ gaId: import.meta.env.PUBLIC_GA_ID }}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', gaId);
+        </script>
+      </>
+    )}
+
+    <script>
+      document.documentElement.classList.add('js');
+    </script>
+  </head>
+  <body
+    class:list={['bg-brand-primary text-brand-text font-body min-h-screen antialiased', bodyClass]}
+    data-layout-width={settings.layout.width}
+    data-layout-spacing={settings.layout.spacing}
+    data-layout-corners={settings.layout.corners}
+    data-header-style={settings.layout.header_style}
+    data-color-scheme={settings.brand.color_scheme}
+    data-logo-mode={settings.brand.logo_mode}
+  >
+    <SiteStructuredData />
+    <slot />
+
+    <!-- Scroll-triggered reveal animations -->
+    <script>
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('revealed');
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      );
+      document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+    </script>
+  </body>
+</html>

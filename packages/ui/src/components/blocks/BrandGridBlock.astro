@@ -1,0 +1,222 @@
+---
+import Container from '../ui/Container.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+
+interface BrandItem {
+  name?: string;
+  summary?: string;
+  image?: string;
+  url?: string;
+  status?: string;
+  open_in_new_tab?: boolean;
+}
+
+interface Props {
+  kicker?: string;
+  heading?: string;
+  subheading?: string;
+  items?: BrandItem[];
+  columns?: number | string;
+  theme?: string;
+  cta_text?: string;
+  cta_url?: string;
+  cta_open_in_new_tab?: boolean;
+}
+
+const {
+  kicker,
+  heading,
+  subheading,
+  items = [],
+  columns = 3,
+  theme = 'default',
+  cta_text,
+  cta_url,
+  cta_open_in_new_tab = false,
+} = Astro.props;
+
+const normalizedColumns = Number(columns) || 3;
+const colClasses: Record<number, string> = {
+  2: 'grid-cols-1 md:grid-cols-2',
+  3: 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3',
+  4: 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4',
+  5: 'grid-cols-1 md:grid-cols-3 xl:grid-cols-5',
+};
+
+const themes: Record<
+  string,
+  {
+    section: string;
+    card: string;
+    imageWrap: string;
+    imageClass: string;
+    kickerText: string;
+    statusText: string;
+    title: string;
+    summary: string;
+    visitText: string;
+    ctaButton: string;
+  }
+> = {
+  default: {
+    section: 'bg-brand-surface/50',
+    card: 'border border-brand-border/40 bg-brand-surface shadow-[0_20px_55px_rgba(15,23,42,0.06)] hover:border-brand-accent/30 hover:shadow-[0_24px_64px_rgba(15,23,42,0.12)]',
+    imageWrap: 'bg-white p-8',
+    imageClass: 'object-contain',
+    kickerText: 'text-brand-accent/80',
+    statusText: 'text-brand-accent/80',
+    title: 'text-brand-text',
+    summary: 'text-brand-muted',
+    visitText: 'text-brand-text',
+    ctaButton: 'bg-brand-accent !text-white hover:bg-brand-accent-light',
+  },
+  light: {
+    section: '',
+    card: 'border border-brand-border/40 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.05)] hover:border-brand-accent/30 hover:shadow-[0_20px_55px_rgba(15,23,42,0.1)]',
+    imageWrap: 'bg-white p-10',
+    imageClass: 'object-contain',
+    kickerText: 'text-brand-accent/80',
+    statusText: 'text-brand-accent/80',
+    title: 'text-brand-text',
+    summary: 'text-brand-muted',
+    visitText: 'text-brand-text',
+    ctaButton: 'bg-brand-accent !text-white hover:bg-brand-accent-light',
+  },
+  minimal: {
+    section: '',
+    card: 'bg-transparent hover:bg-brand-surface/40 rounded-[1.4rem]',
+    imageWrap: 'bg-white p-8 rounded-[1.4rem]',
+    imageClass: 'object-contain',
+    kickerText: 'text-brand-accent/80',
+    statusText: 'text-brand-accent/80',
+    title: 'text-brand-text',
+    summary: 'text-brand-muted',
+    visitText: 'text-brand-text',
+    ctaButton: 'bg-brand-accent !text-white hover:bg-brand-accent-light',
+  },
+  dark: {
+    section: 'bg-brand-text',
+    card: 'border border-white/10 bg-white/5 backdrop-blur-sm hover:border-white/30 hover:bg-white/10',
+    imageWrap: 'bg-white p-8',
+    imageClass: 'object-contain',
+    kickerText: 'text-brand-accent-light',
+    statusText: 'text-brand-accent-light',
+    title: 'text-white',
+    summary: 'text-white/70',
+    visitText: 'text-white',
+    ctaButton: 'bg-white !text-brand-text hover:bg-white/90',
+  },
+  photo: {
+    section: 'bg-brand-surface/50',
+    card: 'border border-brand-border/40 bg-brand-surface shadow-[0_20px_55px_rgba(15,23,42,0.06)] hover:border-brand-accent/30 hover:shadow-[0_24px_64px_rgba(15,23,42,0.12)]',
+    imageWrap: 'bg-brand-surface-alt',
+    imageClass: 'object-cover transition-transform duration-500 group-hover:scale-[1.03]',
+    kickerText: 'text-brand-accent/80',
+    statusText: 'text-brand-accent/80',
+    title: 'text-brand-text',
+    summary: 'text-brand-muted',
+    visitText: 'text-brand-text',
+    ctaButton: 'bg-brand-accent !text-white hover:bg-brand-accent-light',
+  },
+};
+
+const t = themes[theme] || themes.default;
+const isDark = theme === 'dark';
+---
+
+{items.length > 0 && (
+  <section class:list={['py-20 md:py-28', t.section]}>
+    <Container width="wide">
+      {(heading || subheading || kicker) && (
+        <div class="reveal">
+          <SectionHeading kicker={kicker} heading={heading || ''} subheading={subheading} inverted={isDark} />
+        </div>
+      )}
+
+      <div class:list={['grid gap-6 md:gap-8', colClasses[normalizedColumns] || colClasses[3]]}>
+        {items.map((item, index) => {
+          const openInNewTab = item.open_in_new_tab ?? true;
+          const cardClasses = `group overflow-hidden rounded-[1.8rem] transition-all duration-300 hover:-translate-y-1 ${t.card}`;
+
+          const cardBody = (
+            <>
+              {item.image ? (
+                <div class:list={['aspect-[4/3] overflow-hidden flex items-center justify-center', t.imageWrap]}>
+                  <img
+                    src={item.image}
+                    alt={item.name || 'Brand image'}
+                    class:list={['h-full w-full', t.imageClass]}
+                    loading="lazy"
+                  />
+                </div>
+              ) : (
+                <div class="flex aspect-[4/3] items-end bg-gradient-to-br from-brand-primary/10 via-brand-surface-alt to-brand-accent/10 p-6">
+                  <span class="rounded-full border border-brand-border/50 bg-white/70 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-brand-muted">
+                    {item.status || 'Planned'}
+                  </span>
+                </div>
+              )}
+              <div class="flex h-full flex-col gap-4 p-6">
+                {item.status && (
+                  <p class:list={['text-xs font-semibold uppercase tracking-[0.18em]', t.statusText]}>
+                    {item.status}
+                  </p>
+                )}
+                {item.name && (
+                  <h3 class:list={['text-2xl font-heading font-semibold tracking-tight', t.title]}>
+                    {item.name}
+                  </h3>
+                )}
+                {item.summary && (
+                  <p class:list={['text-base leading-relaxed', t.summary]}>
+                    {item.summary}
+                  </p>
+                )}
+                {item.url && (
+                  <span class:list={['mt-auto inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em]', t.visitText]}>
+                    Visit
+                    <span aria-hidden="true">+</span>
+                  </span>
+                )}
+              </div>
+            </>
+          );
+
+          return item.url ? (
+            <a
+              href={item.url}
+              target={openInNewTab ? '_blank' : undefined}
+              rel={openInNewTab ? 'noopener noreferrer' : undefined}
+              class:list={[cardClasses, `reveal reveal-delay-${Math.min((index % 4) + 1, 4)}`]}
+            >
+              {cardBody}
+            </a>
+          ) : (
+            <article class:list={[cardClasses, `reveal reveal-delay-${Math.min((index % 4) + 1, 4)}`]}>
+              {cardBody}
+            </article>
+          );
+        })}
+      </div>
+
+      {cta_text && cta_url && (
+        <div class="mt-12 flex justify-center reveal">
+          <a
+            href={cta_url}
+            target={cta_open_in_new_tab ? '_blank' : undefined}
+            rel={cta_open_in_new_tab ? 'noopener noreferrer' : undefined}
+            class:list={[
+              'inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold uppercase tracking-[0.18em] transition-colors',
+              t.ctaButton,
+            ]}
+          >
+            {cta_text}
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+      )}
+    </Container>
+  </section>
+)}

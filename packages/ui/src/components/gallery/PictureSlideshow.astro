@@ -1,0 +1,324 @@
+---
+interface GalleryImage {
+  src: string;
+  alt?: string;
+  caption?: string;
+}
+
+interface Props {
+  images: GalleryImage[];
+}
+
+const { images = [] } = Astro.props;
+---
+
+{images.length > 0 ? (
+  <section class="py-12 md:py-20">
+    <!-- Counter + Nav -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between mb-6">
+      <p class="text-brand-muted text-sm">
+        <span id="slideshow-counter">1</span> / {images.length}
+      </p>
+      <div class="flex gap-2">
+        <button
+          id="slideshow-prev"
+          class="w-10 h-10 rounded-full border border-brand-border/40 text-brand-muted hover:text-brand-accent hover:border-brand-accent/50 transition-all duration-300 flex items-center justify-center"
+          aria-label="Previous image"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+        <button
+          id="slideshow-next"
+          class="w-10 h-10 rounded-full border border-brand-border/40 text-brand-muted hover:text-brand-accent hover:border-brand-accent/50 transition-all duration-300 flex items-center justify-center"
+          aria-label="Next image"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Horizontal Scroll Gallery -->
+    <div
+      id="slideshow-track"
+      class="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth px-4 sm:px-6 lg:px-8 pb-4"
+      style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: var(--color-brand-border) transparent;"
+    >
+      {images.map((img, i) => (
+        <button
+          class="slideshow-item flex-shrink-0 relative group cursor-pointer rounded-xl overflow-hidden bg-brand-surface border border-brand-border/20 hover:border-brand-accent/30 transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-brand-accent/50"
+          data-slideshow-index={i}
+          aria-label={`View ${img.alt || `image ${i + 1}`}`}
+          style="scroll-snap-align: center;"
+        >
+          <img
+            src={img.src}
+            alt={img.alt || ''}
+            class="h-[50vh] md:h-[65vh] w-auto max-w-[85vw] md:max-w-[60vw] object-contain"
+            loading={i < 3 ? 'eager' : 'lazy'}
+          />
+          {img.caption && (
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-brand-primary/90 via-brand-primary/40 to-transparent p-4 pt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <p class="text-brand-champagne/90 text-sm">{img.caption}</p>
+            </div>
+          )}
+        </button>
+      ))}
+    </div>
+
+    <!-- Thumbnail Strip -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+      <div
+        id="slideshow-thumbs"
+        class="flex gap-2 overflow-x-auto scroll-smooth pb-2"
+        style="scrollbar-width: thin; scrollbar-color: var(--color-brand-border) transparent;"
+      >
+        {images.map((img, i) => (
+          <button
+            class="slideshow-thumb flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 border-transparent opacity-50 hover:opacity-80 transition-all duration-300 focus:outline-none"
+            data-thumb-index={i}
+            aria-label={`Go to image ${i + 1}`}
+          >
+            <img
+              src={img.src}
+              alt=""
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="pictures-lightbox" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center" role="dialog" aria-modal="true" aria-label="Image lightbox">
+      <button class="absolute top-6 right-6 text-white/70 hover:text-white transition-colors z-10" id="lb-close" aria-label="Close lightbox">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors z-10" id="lb-prev" aria-label="Previous image">
+        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+      </button>
+      <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors z-10" id="lb-next" aria-label="Next image">
+        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </button>
+      <img id="lb-img" src="" alt="" class="max-w-[92vw] max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+      <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+        <p id="lb-caption" class="text-white/80 text-sm"></p>
+        <p id="lb-counter" class="text-white/40 text-xs"></p>
+      </div>
+    </div>
+  </section>
+) : (
+  <section class="py-20">
+    <div class="max-w-7xl mx-auto px-4 text-center">
+      <p class="text-brand-muted">Gallery coming soon!</p>
+    </div>
+  </section>
+)}
+
+<style>
+  /* Custom scrollbar for the gallery track */
+  #slideshow-track::-webkit-scrollbar {
+    height: 6px;
+  }
+  #slideshow-track::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  #slideshow-track::-webkit-scrollbar-thumb {
+    background: var(--color-brand-border);
+    border-radius: 3px;
+  }
+  #slideshow-track::-webkit-scrollbar-thumb:hover {
+    background: var(--color-brand-accent);
+  }
+
+  #slideshow-thumbs::-webkit-scrollbar {
+    height: 4px;
+  }
+  #slideshow-thumbs::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  #slideshow-thumbs::-webkit-scrollbar-thumb {
+    background: var(--color-brand-border);
+    border-radius: 2px;
+  }
+
+  .slideshow-thumb.active {
+    border-color: var(--color-brand-accent);
+    opacity: 1;
+  }
+</style>
+
+<script>
+  const track = document.getElementById('slideshow-track');
+  const items = document.querySelectorAll<HTMLElement>('.slideshow-item');
+  const thumbs = document.querySelectorAll<HTMLElement>('.slideshow-thumb');
+  const counter = document.getElementById('slideshow-counter');
+  const prevBtn = document.getElementById('slideshow-prev');
+  const nextBtn = document.getElementById('slideshow-next');
+
+  // Lightbox elements
+  const lightbox = document.getElementById('pictures-lightbox');
+  const lbImg = document.getElementById('lb-img') as HTMLImageElement;
+  const lbCaption = document.getElementById('lb-caption');
+  const lbCounter = document.getElementById('lb-counter');
+  const lbClose = document.getElementById('lb-close');
+  const lbPrev = document.getElementById('lb-prev');
+  const lbNext = document.getElementById('lb-next');
+
+  if (track && items.length > 0) {
+    let currentIndex = 0;
+    const totalImages = items.length;
+
+    // Gather image data for lightbox
+    const imageData = Array.from(items).map((item) => {
+      const img = item.querySelector('img')!;
+      const caption = item.querySelector('p');
+      return { src: img.src, alt: img.alt, caption: caption?.textContent || '' };
+    });
+
+    // Update active state
+    const updateActive = (index: number) => {
+      currentIndex = Math.max(0, Math.min(index, totalImages - 1));
+      if (counter) counter.textContent = String(currentIndex + 1);
+
+      // Update thumbnails
+      thumbs.forEach((thumb, i) => {
+        thumb.classList.toggle('active', i === currentIndex);
+      });
+
+      // Scroll thumbnail into view
+      thumbs[currentIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    };
+
+    // Scroll to specific image
+    const scrollToImage = (index: number) => {
+      const target = items[index];
+      if (target && track) {
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center',
+        });
+        updateActive(index);
+      }
+    };
+
+    // Detect which image is most visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+            const index = Number((entry.target as HTMLElement).dataset.slideshowIndex);
+            if (!isNaN(index)) updateActive(index);
+          }
+        });
+      },
+      { root: track, threshold: 0.5 }
+    );
+
+    items.forEach((item) => observer.observe(item));
+
+    // Nav buttons
+    prevBtn?.addEventListener('click', () => scrollToImage(currentIndex - 1));
+    nextBtn?.addEventListener('click', () => scrollToImage(currentIndex + 1));
+
+    // Thumbnail clicks
+    thumbs.forEach((thumb) => {
+      thumb.addEventListener('click', () => {
+        const index = Number(thumb.dataset.thumbIndex);
+        if (!isNaN(index)) scrollToImage(index);
+      });
+    });
+
+    // Keyboard navigation (when not in lightbox)
+    document.addEventListener('keydown', (e) => {
+      if (lightbox?.classList.contains('active')) return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); scrollToImage(currentIndex - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); scrollToImage(currentIndex + 1); }
+    });
+
+    // Mouse wheel horizontal scroll
+    track.addEventListener('wheel', (e) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        track.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+
+    // ── Lightbox ──
+    let lbCurrent = 0;
+
+    const showLightbox = (index: number) => {
+      lbCurrent = ((index % totalImages) + totalImages) % totalImages;
+      lbImg!.src = imageData[lbCurrent].src;
+      lbImg!.alt = imageData[lbCurrent].alt;
+      if (lbCaption) lbCaption.textContent = imageData[lbCurrent].caption;
+      if (lbCounter) lbCounter.textContent = `${lbCurrent + 1} / ${totalImages}`;
+      lightbox!.classList.remove('hidden');
+      lightbox!.classList.add('flex', 'active');
+      document.body.style.overflow = 'hidden';
+    };
+
+    const hideLightbox = () => {
+      lightbox!.classList.add('hidden');
+      lightbox!.classList.remove('flex', 'active');
+      document.body.style.overflow = '';
+      // Sync gallery scroll to lightbox position
+      scrollToImage(lbCurrent);
+    };
+
+    // Click images to open lightbox
+    items.forEach((item) => {
+      item.addEventListener('click', () => {
+        const index = Number(item.dataset.slideshowIndex);
+        if (!isNaN(index)) showLightbox(index);
+      });
+    });
+
+    lbClose?.addEventListener('click', hideLightbox);
+    lbPrev?.addEventListener('click', () => showLightbox(lbCurrent - 1));
+    lbNext?.addEventListener('click', () => showLightbox(lbCurrent + 1));
+
+    lightbox?.addEventListener('click', (e) => {
+      if (e.target === lightbox) hideLightbox();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (!lightbox?.classList.contains('active')) return;
+      if (e.key === 'Escape') hideLightbox();
+      if (e.key === 'ArrowLeft') showLightbox(lbCurrent - 1);
+      if (e.key === 'ArrowRight') showLightbox(lbCurrent + 1);
+    });
+
+    // Touch swipe in lightbox
+    let touchStartX = 0;
+    lightbox?.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+
+    lightbox?.addEventListener('touchend', (e) => {
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) showLightbox(lbCurrent + 1);
+        else showLightbox(lbCurrent - 1);
+      }
+    }, { passive: true });
+
+    // Init
+    updateActive(0);
+  }
+</script>

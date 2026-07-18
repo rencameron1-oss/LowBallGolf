@@ -1,0 +1,58 @@
+---
+import Container from '../ui/Container.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+
+interface Contributor {
+  name: string;
+  role?: string;
+  image?: string;
+  bio?: string;
+  url?: string;
+}
+
+interface Props {
+  heading?: string;
+  subheading?: string;
+  contributors?: Contributor[];
+  columns?: string;
+}
+
+const {
+  heading,
+  subheading,
+  contributors = [],
+  columns = '3',
+} = Astro.props;
+
+const colClass = columns === '4' ? 'lg:grid-cols-4' : columns === '2' ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3';
+---
+
+<section class="py-10 md:py-14">
+  <Container width="wide">
+    {heading && <SectionHeading heading={heading} subheading={subheading} />}
+
+    <div class:list={['grid grid-cols-1 gap-6', colClass]}>
+      {contributors.map((person) => {
+        const Tag = person.url ? 'a' : 'div';
+        return (
+          <Tag href={person.url} class:list={['flex gap-4 p-4 rounded-lg border border-brand-border transition-all duration-200', person.url && 'hover:border-brand-accent hover:bg-brand-bg-alt group']}>
+            {person.image ? (
+              <div class="w-16 h-16 flex-shrink-0 rounded-full overflow-hidden">
+                <img src={person.image} alt={person.name} class="w-full h-full object-cover" loading="lazy" />
+              </div>
+            ) : (
+              <div class="w-16 h-16 flex-shrink-0 rounded-full bg-brand-accent-bg flex items-center justify-center">
+                <span class="text-lg font-heading font-bold text-brand-accent">{person.name.charAt(0)}</span>
+              </div>
+            )}
+            <div>
+              <h3 class:list={['text-base font-heading font-bold text-brand-text', person.url && 'group-hover:text-brand-accent transition-colors']}>{person.name}</h3>
+              {person.role && <p class="text-xs text-brand-muted font-ui mt-0.5">{person.role}</p>}
+              {person.bio && <p class="text-sm text-brand-body font-ui mt-1 line-clamp-2">{person.bio}</p>}
+            </div>
+          </Tag>
+        );
+      })}
+    </div>
+  </Container>
+</section>

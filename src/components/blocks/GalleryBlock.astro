@@ -1,0 +1,57 @@
+---
+interface GalleryImage {
+  src?: string;
+  alt?: string;
+  caption?: string;
+  focus?: 'top' | 'center' | 'bottom';
+}
+
+interface Props {
+  images?: GalleryImage[];
+  columns?: number;
+}
+
+const {
+  images = [],
+  columns = 3,
+} = Astro.props;
+
+const colClasses: Record<number, string> = {
+  2: 'grid-cols-1 sm:grid-cols-2',
+  3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+  4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
+};
+---
+
+{images.length > 0 && (
+  <section class="py-20 md:py-28">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class:list={['grid gap-4 md:gap-6', colClasses[columns] || colClasses[3]]}>
+        {images.map((img, i) => (
+          <div class={`reveal reveal-delay-${Math.min((i % 4) + 1, 4)}`}>
+            <div class="group relative overflow-hidden rounded-2xl bg-brand-surface border border-brand-border/20">
+              {img.src && (
+                <img
+                  src={img.src}
+                  alt={img.alt || ''}
+                  class:list={[
+                    'w-full aspect-[4/3] object-cover group-hover:scale-105 transition-transform duration-700',
+                    (img.focus || 'top') === 'top' && 'object-top',
+                    img.focus === 'center' && 'object-center',
+                    img.focus === 'bottom' && 'object-bottom',
+                  ]}
+                  loading="lazy"
+                />
+              )}
+              {img.caption && (
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-brand-primary/90 to-transparent p-4 pt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <p class="text-brand-champagne/90 text-sm">{img.caption}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}

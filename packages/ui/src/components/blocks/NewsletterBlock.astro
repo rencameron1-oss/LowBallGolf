@@ -1,0 +1,54 @@
+---
+interface Props {
+  heading?: string;
+  subheading?: string;
+  button_text?: string;
+  background?: string;
+}
+
+const {
+  heading = 'Stay in the loop',
+  subheading = 'Get the latest articles and podcast episodes delivered to your inbox.',
+  button_text = 'Subscribe',
+  background = 'accent',
+} = Astro.props;
+
+const isAccent = background === 'accent';
+const bgClass = isAccent ? 'bg-brand-accent' : background === 'light' ? 'bg-brand-bg-alt' : '';
+---
+
+<section class:list={['py-12 md:py-16', bgClass]}>
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h2 class:list={['text-2xl md:text-3xl font-heading font-bold tracking-tight', isAccent ? 'text-white' : 'text-brand-text']}>
+      {heading}
+    </h2>
+    {subheading && (
+      <p class:list={['mt-2 text-base font-ui', isAccent ? 'text-white/80' : 'text-brand-muted']}>
+        {subheading}
+      </p>
+    )}
+    <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+      <input
+        type="email"
+        placeholder="Your email address"
+        class:list={[
+          'flex-1 px-4 py-3 rounded-full text-sm font-ui border focus:outline-none focus:ring-2',
+          isAccent
+            ? 'bg-white/10 border-white/20 text-white placeholder-white/50 focus:ring-white/40'
+            : 'bg-white border-brand-border text-brand-text placeholder-brand-muted focus:ring-brand-accent/40',
+        ]}
+      />
+      <button
+        type="button"
+        class:list={[
+          'px-6 py-3 rounded-full text-sm font-ui font-semibold transition-colors',
+          isAccent
+            ? 'bg-white text-brand-accent hover:bg-white/90'
+            : 'bg-brand-accent text-white hover:bg-brand-accent-light',
+        ]}
+      >
+        {button_text}
+      </button>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,21 @@
+---
+interface Props {
+  text: string;
+  color?: 'gold' | 'green' | 'red' | 'blue' | 'gray';
+  class?: string;
+}
+
+const { text, color = 'gold', class: className = '' } = Astro.props;
+
+const colorClasses = {
+  gold: 'bg-brand-accent/20 text-brand-accent',
+  green: 'bg-green-900/30 text-green-400',
+  red: 'bg-red-900/30 text-red-400',
+  blue: 'bg-blue-900/30 text-blue-400',
+  gray: 'bg-gray-700/30 text-gray-400',
+};
+---
+
+<span class:list={['inline-block px-3 py-1 text-xs font-semibold rounded-full uppercase tracking-wide', colorClasses[color], className]}>
+  {text}
+</span>

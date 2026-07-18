@@ -1,0 +1,45 @@
+---
+import HomeHeroSlider from '@bands/ui/components/home/HomeHeroSlider.astro';
+import BlockRenderer from '../blocks/BlockRenderer.astro';
+import { normalizeHeroSlides } from '@bands/ui/utils/heroSlider';
+
+interface Props {
+  homeEntry: any;
+}
+
+const { homeEntry } = Astro.props;
+
+const heroContent = homeEntry.data.hero;
+const heroAutoplaySeconds = heroContent.autoplay_seconds ?? 7;
+const heroSlides = normalizeHeroSlides(heroContent);
+const blocks = homeEntry.data.blocks ?? [];
+---
+
+<style is:global>
+  body.home-dark-page {
+    background:
+      radial-gradient(circle at 14% 8%, rgba(49, 88, 137, 0.14), transparent 20%),
+      radial-gradient(circle at 84% 10%, rgba(165, 90, 58, 0.16), transparent 16%),
+      linear-gradient(180deg, #090b10 0%, #0d1015 38%, #0f141b 100%);
+    color: #f2efe8;
+  }
+
+  .home-dark-root {
+    color: #f2efe8;
+  }
+
+  .home-dark-root a {
+    color: inherit;
+  }
+</style>
+
+<div class="home-dark-root">
+  <HomeHeroSlider
+    slides={heroSlides}
+    autoplaySeconds={heroAutoplaySeconds}
+    ariaLabel="Homepage hero slider"
+    sliderId="home-top-hero"
+  />
+
+  {blocks.length > 0 && <BlockRenderer blocks={blocks} />}
+</div>

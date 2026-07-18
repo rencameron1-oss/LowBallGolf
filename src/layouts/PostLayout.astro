@@ -1,0 +1,33 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Header from '../components/layout/Header.astro';
+import Footer from '../components/layout/Footer.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  publishedTime?: string;
+  modifiedTime?: string;
+  author?: string;
+  tags?: string[];
+}
+
+const { title, description, ogImage, publishedTime, modifiedTime, author, tags } = Astro.props;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  ogImage={ogImage}
+  ogType="article"
+  articleMeta={{ publishedTime, modifiedTime, author, tags }}
+>
+  <Header />
+  <main class="py-12">
+    <article class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <slot />
+    </article>
+  </main>
+  <Footer />
+</BaseLayout>

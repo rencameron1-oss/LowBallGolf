@@ -1,0 +1,41 @@
+{
+  "title": "Site Settings",
+  "location": "Melbourne, Australia",
+  "contact_intro": "Use this page for enquiries, project leads, bookings, or a simple hello. Replace this copy in TinaCMS when the site becomes yours.",
+  "footer_note": "Built from a transportable Astro, TinaCMS, GitHub and Cloudflare starter.",
+  "brand": {
+    "color_scheme": "editorial",
+    "logo_mode": "initials",
+    "logo_text": "Agentic Site Starter",
+    "logo_initials": "AS",
+    "logo_shape": "soft-square",
+    "logo_image_light": "",
+    "logo_image_dark": "",
+    "font_preset": "starter-readable",
+    "logo_font": "inter",
+    "colors": {
+      "primary": "#F5F1E8",
+      "primary_soft": "#FAF7EF",
+      "accent": "#2F7D6D",
+      "accent_light": "#4A9D8D",
+      "text": "#26342F",
+      "muted": "#68756F",
+      "surface": "#FEFCF7",
+      "surface_alt": "#E8E0D2",
+      "border": "#D7D0C2",
+      "champagne": "#26342F",
+      "ink": "#1D2C28",
+      "dark_surface": "#101818",
+      "dark_surface_alt": "#162222",
+      "dark_border": "#293736",
+      "dark_accent": "#D28A50",
+      "dark_accent_light": "#E0A36E"
+    }
+  },
+  "layout": {
+    "width": "balanced",
+    "spacing": "balanced",
+    "corners": "soft",
+    "header_style": "glass"
+  }
+}

@@ -1,0 +1,85 @@
+---
+import Button from '../ui/Button.astro';
+
+interface Props {
+  background_image?: string;
+  heading?: string;
+  subheading?: string;
+  overlay_opacity?: number;
+  cta_text?: string;
+  cta_url?: string;
+  cta_secondary_text?: string;
+  cta_secondary_url?: string;
+  min_height?: 'small' | 'medium' | 'large' | 'fullscreen';
+}
+
+const {
+  background_image,
+  heading,
+  subheading,
+  overlay_opacity = 60,
+  cta_text,
+  cta_url,
+  cta_secondary_text,
+  cta_secondary_url,
+  min_height = 'medium',
+} = Astro.props;
+
+const heightClasses: Record<string, string> = {
+  small: 'min-h-[40vh]',
+  medium: 'min-h-[60vh]',
+  large: 'min-h-[80vh]',
+  fullscreen: 'min-h-screen',
+};
+
+const opacityDecimal = (overlay_opacity / 100).toFixed(2);
+---
+
+<section class:list={[
+  'relative flex items-center justify-center overflow-hidden -mt-20 md:-mt-24',
+  heightClasses[min_height] || heightClasses.medium,
+]}>
+  {background_image ? (
+    <div class="absolute inset-0">
+      <img
+        src={background_image}
+        alt=""
+        class="w-full h-full object-cover"
+        loading="eager"
+      />
+      <div
+        class="absolute inset-0 bg-gradient-to-b from-brand-primary via-brand-primary to-brand-primary"
+        style={`opacity: ${opacityDecimal};`}
+      ></div>
+    </div>
+  ) : (
+    <div class="absolute inset-0 bg-gradient-to-b from-brand-surface-alt via-brand-primary to-brand-primary"></div>
+  )}
+
+  <div class="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto pt-20">
+    {heading && (
+      <h1 class="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-brand-champagne leading-tight tracking-tight animate-hero-text">
+        {heading}
+      </h1>
+    )}
+    {subheading && (
+      <p class="mt-4 md:mt-6 text-xl md:text-2xl text-brand-champagne/60 max-w-2xl mx-auto animate-hero-fade" style="animation-delay: 0.3s">
+        {subheading}
+      </p>
+    )}
+    {(cta_text || cta_secondary_text) && (
+      <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 animate-hero-fade" style="animation-delay: 0.6s">
+        {cta_text && cta_url && (
+          <Button href={cta_url} size="lg">
+            {cta_text}
+          </Button>
+        )}
+        {cta_secondary_text && cta_secondary_url && (
+          <Button href={cta_secondary_url} size="lg" variant="outline">
+            {cta_secondary_text}
+          </Button>
+        )}
+      </div>
+    )}
+  </div>
+</section>

@@ -1,0 +1,60 @@
+---
+interface Props {
+  youtube_id: string;
+  title?: string;
+  description?: string;
+  max_width?: 'narrow' | 'default' | 'wide';
+}
+
+function extractYouTubeId(input: string): string {
+  if (!input) return '';
+  const match = input.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : input;
+}
+
+const {
+  youtube_id: rawId,
+  title,
+  description,
+  max_width = 'default',
+} = Astro.props;
+const youtube_id = extractYouTubeId(rawId);
+
+const widthClasses: Record<string, string> = {
+  narrow: 'max-w-3xl',
+  default: 'max-w-5xl',
+  wide: 'max-w-7xl',
+};
+---
+
+<section class="py-20 md:py-28">
+  <div class:list={[
+    'mx-auto px-4 sm:px-6 lg:px-8',
+    widthClasses[max_width] || widthClasses.default,
+  ]}>
+    {title && (
+      <div class="text-center mb-10 reveal">
+        <h2 class="text-3xl md:text-5xl font-heading font-bold text-brand-champagne">
+          {title}
+        </h2>
+        <div class="accent-line mt-4 mb-4 mx-auto"></div>
+        {description && (
+          <p class="mt-3 text-lg text-brand-muted max-w-2xl mx-auto">{description}</p>
+        )}
+      </div>
+    )}
+
+    <div class="reveal reveal-delay-1">
+      <div class="relative aspect-video rounded-2xl overflow-hidden shadow-2xl border border-brand-border/20">
+        <iframe
+          src={`https://www.youtube.com/embed/${youtube_id}?rel=0&modestbranding=1`}
+          title={title || 'Video'}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+          loading="lazy"
+          class="absolute inset-0 w-full h-full"
+        ></iframe>
+      </div>
+    </div>
+  </div>
+</section>

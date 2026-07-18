@@ -1,0 +1,180 @@
+---
+import Container from '../ui/Container.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+
+interface ExpandingItem {
+  label?: string;
+  description?: string;
+}
+
+interface Props {
+  kicker?: string;
+  heading?: string;
+  subheading?: string;
+  cta_text?: string;
+  cta_url?: string;
+  items?: ExpandingItem[];
+  number_style?: 'padded' | 'plain';
+  background?: 'default' | 'dark' | 'accent';
+}
+
+const {
+  kicker,
+  heading,
+  subheading,
+  cta_text,
+  cta_url,
+  items = [],
+  number_style = 'padded',
+  background = 'default',
+} = Astro.props;
+
+const validItems = items.filter((item) => item && (item.label || item.description));
+
+const sectionClass =
+  background === 'dark'
+    ? 'bg-brand-text text-brand-surface'
+    : background === 'accent'
+    ? 'bg-brand-surface-alt text-brand-text'
+    : 'bg-brand-surface text-brand-text';
+
+const isDark = background === 'dark';
+const mutedClass = isDark ? 'text-brand-surface/70' : 'text-brand-muted';
+const borderClass = isDark ? 'border-brand-surface/20' : 'border-brand-border/60';
+const dividerClass = isDark ? 'bg-brand-surface/15' : 'bg-brand-border/70';
+
+const formatNumber = (index: number) =>
+  number_style === 'plain' ? String(index + 1) : String(index + 1).padStart(2, '0');
+---
+
+{validItems.length > 0 && (
+  <section class:list={['expanding-hover-section py-20 md:py-28', sectionClass]}>
+    <Container width="wide">
+      <div class="flex flex-col gap-10 md:flex-row md:items-end md:justify-between md:gap-16">
+        <div class="max-w-3xl">
+          <SectionHeading
+            kicker={kicker}
+            heading={heading || ''}
+            subheading={subheading}
+          />
+        </div>
+        {cta_text && cta_url && (
+          <a
+            href={cta_url}
+            class:list={[
+              'group inline-flex items-center gap-2 text-base font-medium underline underline-offset-8 transition-colors',
+              isDark
+                ? 'text-brand-surface hover:text-brand-accent'
+                : 'text-brand-text hover:text-brand-accent',
+            ]}
+          >
+            {cta_text}
+            <span aria-hidden="true" class="transition-transform duration-300 group-hover:translate-x-1">→</span>
+          </a>
+        )}
+      </div>
+
+      <div class:list={['expanding-hover-list mt-16 flex flex-col md:mt-24 md:flex-row md:gap-0', borderClass]}>
+        {validItems.map((item, index) => (
+          <div
+            class:list={[
+              'expanding-hover-item group relative flex flex-col justify-between gap-10 border-t py-8 md:flex-1 md:basis-0 md:border-t-0 md:py-0',
+              borderClass,
+              index === 0 ? 'md:border-l-0' : 'md:border-l',
+            ]}
+            style={`--expanding-divider: var(--divider-color, currentColor); min-height: 22rem;`}
+          >
+            <span
+              class:list={[
+                'expanding-hover-number font-heading text-2xl leading-none tracking-tight md:px-6 md:pt-10',
+                isDark ? 'text-brand-surface' : 'text-brand-text',
+              ]}
+            >
+              {formatNumber(index)}
+            </span>
+
+            <div class="expanding-hover-body md:px-6 md:pb-10">
+              {item.label && (
+                <h3
+                  class:list={[
+                    'expanding-hover-label font-heading text-xl font-medium leading-snug tracking-tight md:text-2xl',
+                    isDark ? 'text-brand-surface' : 'text-brand-text',
+                  ]}
+                >
+                  {item.label}
+                </h3>
+              )}
+              {item.description && (
+                <p
+                  class:list={[
+                    'expanding-hover-description mt-4 max-w-md text-sm leading-relaxed md:text-base',
+                    mutedClass,
+                  ]}
+                >
+                  {item.description}
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Container>
+  </section>
+)}
+
+<style>
+  .expanding-hover-list {
+    --expanding-collapsed: 1;
+    --expanding-expanded: 3.2;
+  }
+
+  .expanding-hover-description {
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 320ms ease, transform 320ms ease;
+  }
+
+  @media (min-width: 768px) {
+    .expanding-hover-item {
+      flex-grow: var(--expanding-collapsed);
+      transition: flex-grow 520ms cubic-bezier(0.22, 1, 0.36, 1);
+      overflow: hidden;
+    }
+
+    .expanding-hover-list:hover .expanding-hover-item {
+      flex-grow: calc(var(--expanding-collapsed) * 0.7);
+    }
+
+    .expanding-hover-list .expanding-hover-item:hover {
+      flex-grow: var(--expanding-expanded);
+    }
+
+    .expanding-hover-description {
+      transition: opacity 320ms ease 120ms, transform 320ms ease 120ms;
+    }
+
+    .expanding-hover-item:hover .expanding-hover-description,
+    .expanding-hover-item:focus-within .expanding-hover-description {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .expanding-hover-description {
+      opacity: 1;
+      transform: none;
+    }
+
+    .expanding-hover-item {
+      min-height: 0 !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .expanding-hover-item,
+    .expanding-hover-description {
+      transition: none;
+    }
+  }
+</style>

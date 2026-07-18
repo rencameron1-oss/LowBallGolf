@@ -1,0 +1,81 @@
+---
+import Button from '../ui/Button.astro';
+import Container from '@bands/ui/components/ui/Container.astro';
+
+interface Props {
+  eyebrow?: string;
+  heading: string;
+  subheading?: string;
+  cta_text?: string;
+  cta_url?: string;
+  secondary_cta_text?: string;
+  secondary_cta_url?: string;
+  background_image?: string;
+  background_style?: 'gradient' | 'image' | 'solid';
+}
+
+const {
+  eyebrow,
+  heading,
+  subheading,
+  cta_text,
+  cta_url,
+  secondary_cta_text,
+  secondary_cta_url,
+  background_image,
+  background_style = 'gradient',
+} = Astro.props;
+---
+
+<section class="relative py-24 md:py-32 overflow-hidden">
+  <!-- Background -->
+  {background_style === 'image' && background_image ? (
+    <div class="absolute inset-0">
+      <img
+        src={background_image}
+        alt=""
+        class="w-full h-full object-cover"
+        loading="lazy"
+      />
+      <div class="absolute inset-0 bg-gradient-to-r from-brand-primary/90 via-brand-primary/80 to-brand-accent/30"></div>
+    </div>
+  ) : background_style === 'gradient' ? (
+    <div class="absolute inset-0 bg-gradient-to-br from-brand-surface-alt via-brand-primary to-brand-surface">
+      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--color-brand-accent)_0%,transparent_60%)] opacity-10"></div>
+    </div>
+  ) : (
+    <div class="absolute inset-0 bg-brand-surface"></div>
+  )}
+
+  <Container class="relative z-10">
+    <div class="mx-auto max-w-4xl text-center reveal">
+      {eyebrow && (
+        <p class="text-sm font-semibold uppercase tracking-[0.22em] text-brand-champagne/70">
+          {eyebrow}
+        </p>
+      )}
+      <h2 class="text-3xl md:text-5xl lg:text-6xl font-heading font-bold text-brand-champagne leading-tight">
+        {heading}
+      </h2>
+      {subheading && (
+        <p class="mt-4 text-xl text-brand-champagne/60 max-w-2xl mx-auto">
+          {subheading}
+        </p>
+      )}
+      {(cta_text && cta_url) || (secondary_cta_text && secondary_cta_url) ? (
+        <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
+          {cta_text && cta_url && (
+            <Button href={cta_url} size="lg">
+              {cta_text}
+            </Button>
+          )}
+          {secondary_cta_text && secondary_cta_url && (
+            <Button href={secondary_cta_url} size="lg" variant="secondary">
+              {secondary_cta_text}
+            </Button>
+          )}
+        </div>
+      ) : null}
+    </div>
+  </Container>
+</section>

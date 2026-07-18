@@ -1,0 +1,44 @@
+---
+import HomeHeroSlider from '../home/HomeHeroSlider.astro';
+import { normalizeHeroSlides } from '../../utils/heroSlider';
+
+interface Props {
+  autoplay_seconds?: number;
+  slides?: any[];
+  primary_cta_text?: string;
+  primary_cta_url?: string;
+  secondary_cta_text?: string;
+  secondary_cta_url?: string;
+  topOfPage?: boolean;
+}
+
+const { topOfPage = false, ...sliderContent } = Astro.props;
+const slides = normalizeHeroSlides(sliderContent);
+const autoplaySeconds = sliderContent.autoplay_seconds ?? 7;
+---
+
+{slides.length > 0 && (
+  <section class:list={['ms-block-hero-slider', topOfPage && 'ms-block-hero-slider--top']}>
+    <HomeHeroSlider
+      slides={slides}
+      autoplaySeconds={autoplaySeconds}
+      ariaLabel="Page hero slider"
+    />
+  </section>
+)}
+
+<style>
+  .ms-block-hero-slider {
+    position: relative;
+  }
+
+  .ms-block-hero-slider--top {
+    margin-top: -5rem;
+  }
+
+  @media (max-width: 767px) {
+    .ms-block-hero-slider--top {
+      margin-top: -4.5rem;
+    }
+  }
+</style>

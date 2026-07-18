@@ -1,0 +1,42 @@
+# build output
+dist/
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+**/node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+.env.local
+.dev.vars
+
+# macOS-specific files
+.DS_Store
+
+# jetbrains setting folder
+.idea/
+
+# claude code workspace
+.claude/
+
+# tina
+.tina/__generated__/
+tina/__generated__/
+public/admin/
+.wrangler/
+
+# unused image backup
+_unused-images/
+
+# playwright test artifacts
+.playwright-cli/

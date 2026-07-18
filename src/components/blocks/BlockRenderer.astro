@@ -1,0 +1,105 @@
+---
+import HeroBlock from './HeroBlock.astro';
+import HeroSliderBlock from '@bands/ui/components/blocks/HeroSliderBlock.astro';
+import ShowcaseGridBlock from '@bands/ui/components/blocks/ShowcaseGridBlock.astro';
+import ArticleGridBlock from '@bands/ui/components/blocks/ArticleGridBlock.astro';
+import BrandGridBlock from '@bands/ui/components/blocks/BrandGridBlock.astro';
+import ExpandingHoverListBlock from '@bands/ui/components/blocks/ExpandingHoverListBlock.astro';
+import CaseStudyListBlock from './CaseStudyListBlock.astro';
+import TabbedFeatureBlock from './TabbedFeatureBlock.astro';
+import RichTextBlock from './RichTextBlock.astro';
+import ImageTextBlock from './ImageTextBlock.astro';
+import FullWidthImageBlock from './FullWidthImageBlock.astro';
+import VideoEmbedBlock from './VideoEmbedBlock.astro';
+import TestimonialHighlightBlock from './TestimonialHighlightBlock.astro';
+import TestimonialGridBlock from './TestimonialGridBlock.astro';
+import StatsBlock from './StatsBlock.astro';
+import GalleryBlock from './GalleryBlock.astro';
+import CtaBannerBlock from './CtaBannerBlock.astro';
+import FaqBlock from './FaqBlock.astro';
+import FeatureCardsBlock from './FeatureCardsBlock.astro';
+import TeamBlock from './TeamBlock.astro';
+import SpacerBlock from './SpacerBlock.astro';
+import ContactInfoBlock from './ContactInfoBlock.astro';
+import UniversalBlock from './UniversalBlock.astro';
+import ContributorGridBlock from '@bands/ui/components/blocks/ContributorGridBlock.astro';
+import NewsletterBlock from '@bands/ui/components/blocks/NewsletterBlock.astro';
+import PodcastGridBlock from '@bands/ui/components/blocks/PodcastGridBlock.astro';
+import SocialLinksBlock from '@bands/ui/components/blocks/SocialLinksBlock.astro';
+
+interface Props {
+  blocks?: any[];
+}
+
+const { blocks = [] } = Astro.props;
+---
+
+{blocks.map((block: any) => {
+  const template = block._template || block.__typename;
+
+  switch (template) {
+    case 'heroBlock':
+      return <HeroBlock {...block} />;
+    case 'heroSliderBlock':
+      return <HeroSliderBlock {...block} />;
+    case 'showcaseGridBlock':
+      return <ShowcaseGridBlock {...block} />;
+    case 'articleGridBlock':
+      return <ArticleGridBlock {...block} />;
+    case 'brandGridBlock':
+      return <BrandGridBlock {...block} />;
+    case 'caseStudyListBlock':
+      return <CaseStudyListBlock {...block} />;
+    case 'tabbedFeatureBlock':
+      return <TabbedFeatureBlock {...block} />;
+    case 'richTextBlock':
+      return <RichTextBlock {...block} />;
+    case 'imageTextBlock':
+      return <ImageTextBlock {...block} />;
+    case 'pullQuoteBlock':
+      return <UniversalBlock block={block} />;
+    case 'fullWidthImageBlock':
+      return <FullWidthImageBlock {...block} />;
+    case 'videoEmbedBlock':
+      return <VideoEmbedBlock {...block} />;
+    case 'testimonialHighlightBlock':
+      return <TestimonialHighlightBlock {...block} />;
+    case 'testimonialGridBlock':
+      return <TestimonialGridBlock {...block} />;
+    case 'statsBlock':
+      return <StatsBlock {...block} />;
+    case 'galleryBlock':
+      return <GalleryBlock {...block} />;
+    case 'ctaBannerBlock':
+      return <CtaBannerBlock {...block} />;
+    case 'faqBlock':
+      return <FaqBlock {...block} />;
+    case 'featureCardsBlock':
+      return <FeatureCardsBlock {...block} />;
+    case 'expandingHoverListBlock':
+      return <ExpandingHoverListBlock {...block} />;
+    case 'podcastGridBlock':
+      return <UniversalBlock block={block} />;
+    case 'newsletterBlock':
+      return <NewsletterBlock {...block} />;
+    case 'contributorGridBlock':
+      return <ContributorGridBlock {...block} />;
+    case 'socialLinksBlock':
+      return <SocialLinksBlock {...block} />;
+    case 'songListBlock':
+    case 'articleFeaturedBlock':
+    case 'articleListBlock':
+    case 'articleCarouselBlock':
+    case 'podcastFeaturedBlock':
+    case 'categoryNavBlock':
+      return <UniversalBlock block={block} />;
+    case 'teamBlock':
+      return <TeamBlock {...block} />;
+    case 'spacerBlock':
+      return <SpacerBlock {...block} />;
+    case 'contactInfoBlock':
+      return <ContactInfoBlock {...block} />;
+    default:
+      return null;
+  }
+})}

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Agentic site starter hero</title>
+  <desc id="desc">A stylised desktop screen showing an editable website starter.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101818"/>
+      <stop offset="0.52" stop-color="#1e3632"/>
+      <stop offset="1" stop-color="#d28a50"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffaf0"/>
+      <stop offset="1" stop-color="#d7d0c2"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+  <g opacity="0.18" stroke="#ffffff" stroke-width="2">
+    <path d="M120 180h1360M120 320h1360M120 460h1360M120 600h1360M120 740h1360M260 80v840M520 80v840M780 80v840M1040 80v840M1300 80v840"/>
+  </g>
+  <rect x="185" y="160" width="1230" height="705" rx="42" fill="#0c1112" opacity="0.72"/>
+  <rect x="225" y="205" width="1150" height="615" rx="28" fill="url(#panel)"/>
+  <rect x="275" y="265" width="500" height="58" rx="18" fill="#2f7d6d"/>
+  <rect x="275" y="352" width="730" height="34" rx="14" fill="#26342f" opacity="0.9"/>
+  <rect x="275" y="408" width="620" height="28" rx="14" fill="#68756f" opacity="0.55"/>
+  <rect x="275" y="465" width="210" height="58" rx="18" fill="#d28a50"/>
+  <rect x="515" y="465" width="240" height="58" rx="18" fill="none" stroke="#2f7d6d" stroke-width="4"/>
+  <rect x="865" y="285" width="390" height="255" rx="28" fill="#101818"/>
+  <rect x="905" y="325" width="310" height="32" rx="13" fill="#d28a50"/>
+  <rect x="905" y="383" width="250" height="24" rx="12" fill="#f5f1e8" opacity="0.78"/>
+  <rect x="905" y="430" width="180" height="90" rx="18" fill="#2f7d6d"/>
+  <rect x="275" y="620" width="280" height="120" rx="24" fill="#ffffff" opacity="0.7"/>
+  <rect x="610" y="620" width="280" height="120" rx="24" fill="#ffffff" opacity="0.7"/>
+  <rect x="945" y="620" width="280" height="120" rx="24" fill="#ffffff" opacity="0.7"/>
+  <text x="305" y="305" fill="#fffaf0" font-family="Arial, sans-serif" font-size="28" font-weight="700">YOUR SITE</text>
+  <text x="300" y="700" fill="#26342f" font-family="Arial, sans-serif" font-size="28" font-weight="700">Edit</text>
+  <text x="635" y="700" fill="#26342f" font-family="Arial, sans-serif" font-size="28" font-weight="700">Build</text>
+  <text x="970" y="700" fill="#26342f" font-family="Arial, sans-serif" font-size="28" font-weight="700">Deploy</text>
+</svg>

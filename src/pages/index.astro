@@ -1,0 +1,25 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '../layouts/PageLayout.astro';
+import TinaVisualEditing from '../components/tina/TinaVisualEditing.astro';
+import HomePosterWallLanding from '../components/home/HomePosterWallLanding.astro';
+import siteConfig from '../config/site';
+
+const homeEntry = (await getCollection('home'))[0];
+const homeHeroImage =
+  homeEntry?.data.hero.slides?.[0]?.background_image ||
+  homeEntry?.data.hero.slides?.[0]?.image ||
+  siteConfig.seo.defaultOgImage;
+
+---
+
+<PageLayout
+  title={homeEntry?.data.seo_title || 'Home'}
+  description={homeEntry?.data.seo_description || siteConfig.description}
+  ogImage={homeHeroImage}
+  theme="dark"
+  bodyClass="home-dark-page"
+>
+  <TinaVisualEditing collection="home" relativePath="index.md" />
+  <HomePosterWallLanding homeEntry={homeEntry} />
+</PageLayout>

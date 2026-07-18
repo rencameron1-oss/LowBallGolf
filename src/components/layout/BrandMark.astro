@@ -1,0 +1,66 @@
+---
+import siteConfig from '../../config/site';
+import { getResolvedSiteSettings } from '../../utils/siteSettings';
+
+interface Props {
+  theme?: 'light' | 'dark';
+  size?: 'header' | 'footer';
+  class?: string;
+}
+
+const { theme = 'light', size = 'header', class: className = '' } = Astro.props;
+const isDark = theme === 'dark';
+const {
+  brand: { logo_mode, logo_text, logo_initials, logo_shape, logo_image_light, logo_image_dark },
+} = getResolvedSiteSettings();
+
+const preferredLogoImage = isDark
+  ? logo_image_dark || logo_image_light
+  : logo_image_light || logo_image_dark;
+
+const showImageLogo = logo_mode === 'image' && preferredLogoImage;
+const imageClass = size === 'footer' ? 'h-10 md:h-12' : 'h-8 md:h-10';
+const textClass = size === 'footer' ? 'text-3xl' : 'text-2xl md:text-3xl';
+const initialsSizeClass = size === 'footer' ? 'h-12 w-12 text-lg' : 'h-10 w-10 text-base';
+const initialsShapeClass = {
+  circle: 'rounded-full',
+  'soft-square': 'rounded-[var(--layout-card-radius)]',
+  plain: 'rounded-none bg-transparent border-0 text-current',
+}[logo_shape];
+const logoAlt = logo_text || siteConfig.name;
+
+const {
+  brand: { logoFont },
+} = getResolvedSiteSettings();
+const logoFontStyle = `font-family: ${logoFont.family}`;
+---
+
+{showImageLogo ? (
+  <img
+    src={preferredLogoImage}
+    alt={logoAlt}
+    class:list={[imageClass, 'w-auto object-contain', className]}
+    loading="eager"
+  />
+) : logo_mode === 'initials' ? (
+  <span class:list={['inline-flex items-center gap-3', className]}>
+    <span
+      class:list={[
+        'inline-flex shrink-0 items-center justify-center border border-current/15 bg-brand-accent text-white font-semibold tracking-[0.08em]',
+        initialsSizeClass,
+        initialsShapeClass,
+      ]}
+      style={logoFontStyle}
+      aria-hidden="true"
+    >
+      {logo_initials}
+    </span>
+    <span class:list={['tracking-tight', textClass]} style={logoFontStyle}>
+      {logoAlt}
+    </span>
+  </span>
+) : (
+  <span class:list={['tracking-tight', textClass, className]} style={logoFontStyle}>
+    {logoAlt}
+  </span>
+)}

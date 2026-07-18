@@ -1,0 +1,295 @@
+---
+import siteConfig from '../../config/site';
+import fs from 'node:fs';
+import Button from '../ui/Button.astro';
+import BrandMark from './BrandMark.astro';
+
+interface Props {
+  theme?: 'light' | 'dark';
+}
+
+const { theme = 'light' } = Astro.props;
+const isDark = theme === 'dark';
+
+// Read navigation from CMS-managed JSON, fall back to static config
+let mainNav: { label: string; href: string; children?: { label: string; href: string }[] }[] = [];
+try {
+  const navData = JSON.parse(fs.readFileSync('src/content/navigation/main.json', 'utf-8'));
+  mainNav = navData.items || [];
+} catch {
+  const { mainNav: staticNav } = await import('../../config/navigation');
+  mainNav = staticNav;
+}
+---
+
+<header
+  id="site-header"
+  data-theme={theme}
+  class="site-header-shell fixed top-0 left-0 right-0 z-50 transition-all duration-500 header-transparent"
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-18 md:h-20">
+      <!-- Logo -->
+      <a href="/" class="flex items-center gap-3 group">
+        <BrandMark
+          theme={theme}
+          size="header"
+          class:list={[
+            'transition-transform duration-300 group-hover:translate-y-[-1px]',
+            isDark ? 'text-white' : 'text-brand-text',
+          ]}
+        />
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden lg:flex items-center gap-6 xl:gap-8" aria-label="Main navigation">
+        {mainNav.map((item) => (
+          <div class="relative group flex items-center">
+            <a
+              href={item.href}
+              class:list={[
+                'flex items-center gap-1 text-[13px] font-medium transition-colors duration-300 tracking-[0.16em] uppercase leading-none whitespace-nowrap',
+                isDark ? 'text-white/72 hover:text-white' : 'text-brand-muted hover:text-brand-text',
+              ]}
+            >
+              {item.label}
+              {item.children && (
+                <svg class="w-3 h-3 opacity-50 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              )}
+            </a>
+            {item.children && (
+              <div class="absolute top-full left-1/2 -translate-x-1/2 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform group-hover:translate-y-0 translate-y-2">
+                <div
+                  class:list={[
+                    'rounded-xl py-3 min-w-[220px]',
+                    isDark
+                      ? 'header-dropdown-dark'
+                      : 'glass border border-brand-border/80 paper-shadow',
+                  ]}
+                >
+                  {item.children.map((child) => (
+                    <a
+                      href={child.href}
+                      class:list={[
+                        'block px-5 py-2.5 text-sm transition-all duration-200',
+                        isDark ? 'text-white/72 hover:text-white hover:bg-white/6' : 'text-brand-muted hover:text-brand-text hover:bg-brand-accent/10',
+                      ]}
+                    >
+                      {child.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+        <Button href={siteConfig.booking.ctaUrl} size="sm" class={isDark ? 'header-cta-dark' : ''}>
+          {siteConfig.booking.ctaText}
+        </Button>
+      </nav>
+
+      <!-- Mobile Menu Button -->
+      <button
+        id="mobile-menu-btn"
+        class:list={[
+          'lg:hidden relative z-50 flex min-h-11 min-w-11 items-center justify-center rounded-full p-2',
+          isDark ? 'text-white' : 'text-brand-text',
+        ]}
+        aria-label="Toggle menu"
+        aria-expanded="false"
+      >
+        <div class="w-6 h-5 relative flex flex-col justify-between">
+          <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 origin-center"></span>
+          <span class="hamburger-line block h-0.5 w-6 bg-current transition-all duration-300"></span>
+          <span class="hamburger-line block h-0.5 w-4 bg-current transform transition-all duration-300 origin-center ml-auto"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+
+</header>
+
+<!-- Mobile Menu - Full screen overlay -->
+<div
+  id="mobile-menu"
+  class:list={[
+    'site-mobile-menu fixed inset-0 z-40 flex overflow-y-auto opacity-0 invisible transition-all duration-500',
+    isDark ? 'header-mobile-dark' : 'bg-brand-primary/98',
+  ]}
+>
+  <nav class="site-mobile-menu__nav text-center space-y-6" aria-label="Mobile navigation">
+    {mainNav.map((item) => (
+      <div>
+        <a
+          href={item.href}
+          class:list={[
+            'block text-2xl font-heading font-semibold transition-colors',
+            isDark ? 'text-white hover:text-[#b7beca]' : 'text-brand-text hover:text-brand-accent',
+          ]}
+        >
+          {item.label}
+        </a>
+        {item.children && (
+          <div class="mt-2 space-y-1">
+            {item.children.map((child) => (
+              <a
+                href={child.href}
+                class:list={[
+                  'block text-base transition-colors',
+                  isDark ? 'text-white/68 hover:text-white' : 'text-brand-muted hover:text-brand-text',
+                ]}
+              >
+                {child.label}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    ))}
+    <div class="pt-4">
+      <Button href={siteConfig.booking.ctaUrl} size="lg" class={isDark ? 'header-cta-dark' : ''}>
+        {siteConfig.booking.ctaText}
+      </Button>
+    </div>
+  </nav>
+</div>
+
+<!-- Spacer to account for fixed header -->
+<div class="site-header-spacer"></div>
+
+<style>
+  .site-header-shell {
+    padding-top: max(env(safe-area-inset-top), 0.7rem);
+  }
+
+  .site-header-spacer {
+    height: calc(4.5rem + max(env(safe-area-inset-top), 0.7rem));
+  }
+
+  .site-mobile-menu {
+    align-items: flex-start;
+    justify-content: center;
+    padding:
+      calc(max(env(safe-area-inset-top), 0.7rem) + 4.75rem)
+      1.25rem
+      max(1.5rem, env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .site-mobile-menu__nav {
+    width: min(100%, 22rem);
+    margin: 0 auto;
+    padding-bottom: 1rem;
+  }
+
+  .header-transparent {
+    background: rgba(246, 241, 232, 0.76);
+  }
+
+  .header-transparent[data-theme='dark'] {
+    background: rgba(var(--color-brand-dark-surface-rgb), 0.64);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border-bottom: 1px solid var(--color-brand-dark-border);
+  }
+
+  .header-scrolled {
+    background: rgba(255, 253, 249, 0.9);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(214, 202, 185, 0.95);
+  }
+
+  .header-scrolled[data-theme='dark'] {
+    background: rgba(var(--color-brand-dark-surface-rgb), 0.88);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-bottom: 1px solid var(--color-brand-dark-border);
+  }
+
+  .header-dropdown-dark {
+    border: 1px solid var(--color-brand-dark-border);
+    background: rgba(var(--color-brand-dark-surface-rgb), 0.96);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.34);
+  }
+
+  .header-mobile-dark {
+    background: rgb(var(--color-brand-dark-surface-rgb));
+  }
+
+  .header-cta-dark {
+    background: var(--color-brand-dark-accent);
+    color: white;
+  }
+
+  .header-cta-dark:hover {
+    background: var(--color-brand-dark-accent-light);
+  }
+
+  @media (min-width: 768px) {
+    .site-header-shell {
+      padding-top: max(env(safe-area-inset-top), 0rem);
+    }
+
+    .site-header-spacer {
+      height: calc(5rem + max(env(safe-area-inset-top), 0rem));
+    }
+  }
+
+  /* Hamburger animation */
+  [aria-expanded="true"] .hamburger-line:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+  }
+  [aria-expanded="true"] .hamburger-line:nth-child(2) {
+    opacity: 0;
+  }
+  [aria-expanded="true"] .hamburger-line:nth-child(3) {
+    width: 1.5rem;
+    transform: rotate(-45deg) translate(5px, -5px);
+  }
+</style>
+
+<script>
+  // Scroll-based header background
+  const header = document.getElementById('site-header');
+  const handleScroll = () => {
+    if (window.scrollY > 60) {
+      header?.classList.remove('header-transparent');
+      header?.classList.add('header-scrolled');
+    } else {
+      header?.classList.remove('header-scrolled');
+      header?.classList.add('header-transparent');
+    }
+  };
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  handleScroll();
+
+  // Mobile menu toggle
+  const btn = document.getElementById('mobile-menu-btn');
+  const menu = document.getElementById('mobile-menu');
+  btn?.addEventListener('click', () => {
+    const expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!expanded));
+    if (!expanded) {
+      menu?.classList.remove('opacity-0', 'invisible');
+      menu?.classList.add('opacity-100', 'visible');
+      document.body.style.overflow = 'hidden';
+    } else {
+      menu?.classList.add('opacity-0', 'invisible');
+      menu?.classList.remove('opacity-100', 'visible');
+      document.body.style.overflow = '';
+    }
+  });
+
+  // Close mobile menu on link click
+  menu?.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => {
+      btn?.setAttribute('aria-expanded', 'false');
+      menu?.classList.add('opacity-0', 'invisible');
+      menu?.classList.remove('opacity-100', 'visible');
+      document.body.style.overflow = '';
+    });
+  });
+</script>

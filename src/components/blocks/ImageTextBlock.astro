@@ -1,0 +1,105 @@
+---
+import Button from '../ui/Button.astro';
+import SectionHeading from '@bands/ui/components/ui/SectionHeading.astro';
+
+interface Props {
+  image?: string;
+  image_alt?: string;
+  heading?: string;
+  body?: any;
+  image_position?: 'left' | 'right';
+  cta_text?: string;
+  cta_url?: string;
+  background?: 'default' | 'surface' | 'surface-alt';
+}
+
+const {
+  image,
+  image_alt = '',
+  heading,
+  body,
+  image_position = 'left',
+  cta_text,
+  cta_url,
+  background = 'default',
+} = Astro.props;
+
+const bgClasses: Record<string, string> = {
+  default: '',
+  surface: 'bg-brand-surface',
+  'surface-alt': 'bg-brand-surface-alt',
+};
+
+function renderBody(body: any): string {
+  if (!body) return '';
+  if (typeof body === 'string') return `<p>${body}</p>`;
+  if (body.children) {
+    return body.children
+      .map((node: any) => {
+        if (node.type === 'p') return `<p>${extractText(node)}</p>`;
+        if (node.type === 'h3') return `<h3>${extractText(node)}</h3>`;
+        if (node.type === 'ul') {
+          const items = (node.children || []).map((li: any) => `<li>${extractText(li)}</li>`).join('');
+          return `<ul>${items}</ul>`;
+        }
+        return extractText(node);
+      })
+      .join('\n');
+  }
+  return String(body);
+}
+
+function extractText(node: any): string {
+  if (!node) return '';
+  if (typeof node === 'string') return node;
+  if (node.text !== undefined) {
+    let text = node.text;
+    if (node.bold) text = `<strong>${text}</strong>`;
+    if (node.italic) text = `<em>${text}</em>`;
+    return text;
+  }
+  if (node.children) return node.children.map(extractText).join('');
+  return '';
+}
+
+const html = renderBody(body);
+---
+
+<section class:list={['py-20 md:py-28', bgClasses[background]]}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class:list={[
+      'grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center',
+      image_position === 'right' && 'lg:[direction:rtl] lg:[&>*]:![direction:ltr]',
+    ]}>
+      <!-- Image -->
+      <div class="reveal">
+        {image && (
+          <div class="relative overflow-hidden rounded-2xl shadow-2xl">
+            <img
+              src={image}
+              alt={image_alt}
+              class="w-full h-auto object-cover aspect-[4/3]"
+              loading="lazy"
+            />
+          </div>
+        )}
+      </div>
+
+      <!-- Text Content -->
+      <div class="reveal reveal-delay-2">
+        {heading && <SectionHeading heading={heading} />}
+        {html && (
+          <div
+            class="prose prose-invert prose-lg max-w-none prose-headings:font-heading prose-headings:text-brand-champagne prose-p:text-brand-champagne/70 prose-a:text-brand-accent prose-strong:text-brand-champagne prose-li:text-brand-champagne/70"
+            set:html={html}
+          />
+        )}
+        {cta_text && cta_url && (
+          <div class="mt-8">
+            <Button href={cta_url}>{cta_text}</Button>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+</section>

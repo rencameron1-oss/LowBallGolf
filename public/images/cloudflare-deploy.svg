@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">GitHub to Cloudflare deployment</title>
+  <desc id="desc">A stylised deployment path from local work to GitHub and Cloudflare.</desc>
+  <rect width="1600" height="1000" fill="#101818"/>
+  <circle cx="290" cy="500" r="155" fill="#f5f1e8"/>
+  <circle cx="800" cy="500" r="155" fill="#2f7d6d"/>
+  <circle cx="1310" cy="500" r="155" fill="#d28a50"/>
+  <path d="M465 500h160M975 500h160" stroke="#f5f1e8" stroke-width="22" stroke-linecap="round"/>
+  <path d="M605 455l55 45-55 45M1115 455l55 45-55 45" fill="none" stroke="#f5f1e8" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="215" y="455" width="150" height="95" rx="18" fill="#26342f"/>
+  <rect x="735" y="430" width="130" height="140" rx="24" fill="#101818"/>
+  <rect x="1245" y="435" width="130" height="130" rx="65" fill="#fffaf0"/>
+  <text x="218" y="725" fill="#f5f1e8" font-family="Arial, sans-serif" font-size="34" font-weight="700">LOCAL</text>
+  <text x="704" y="725" fill="#f5f1e8" font-family="Arial, sans-serif" font-size="34" font-weight="700">GITHUB</text>
+  <text x="1204" y="725" fill="#f5f1e8" font-family="Arial, sans-serif" font-size="34" font-weight="700">CLOUDFLARE</text>
+</svg>

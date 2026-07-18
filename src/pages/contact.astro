@@ -1,0 +1,224 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import HeroSection from '../components/hero/HeroSection.astro';
+import HeroSliderBlock from '@bands/ui/components/blocks/HeroSliderBlock.astro';
+import BlockRenderer from '../components/blocks/BlockRenderer.astro';
+import Container from '@bands/ui/components/ui/Container.astro';
+import TinaVisualEditing from '../components/tina/TinaVisualEditing.astro';
+import { getCollection, render } from 'astro:content';
+import { getSiteSettings } from '../utils/siteSettings';
+
+const page = (await getCollection('pages')).find((entry) => entry.id === 'contact');
+const Content = page ? (await render(page)).Content : null;
+const pageHeroSlider = page?.data.hero_slider;
+const pageHeroSlides = pageHeroSlider?.slides ?? [];
+const pageOgImage = pageHeroSlides[0]?.background_image || pageHeroSlides[0]?.image || page?.data.hero_image;
+const contactIntro = getSiteSettings().contact_intro;
+---
+
+<PageLayout
+  title={page?.data.seo_title || page?.data.title || 'Contact'}
+  description={page?.data.seo_description}
+  ogImage={pageOgImage}
+>
+  <TinaVisualEditing collection="page" relativePath="contact.md" />
+
+  {pageHeroSlides.length > 0 ? (
+    <HeroSliderBlock {...pageHeroSlider} topOfPage={true} />
+  ) : (
+    <HeroSection
+      heading={page?.data.hero_heading || 'Contact'}
+      subheading={page?.data.hero_subheading}
+      image={page?.data.hero_image}
+    />
+  )}
+
+  <section class="py-16 md:py-20">
+    <Container width="narrow">
+      <p class="reveal text-lg md:text-xl text-brand-muted leading-relaxed">
+        {contactIntro}
+      </p>
+      {page?.data.intro && (
+        <p class="reveal reveal-delay-1 mt-5 text-base md:text-lg text-brand-muted leading-relaxed">
+          {page.data.intro}
+        </p>
+      )}
+      {Content && (
+        <div class="prose prose-lg max-w-none mt-10 reveal reveal-delay-2">
+          <Content />
+        </div>
+      )}
+
+      <form class="contact-form reveal reveal-delay-2" data-contact-form novalidate>
+        <div class="contact-form__row">
+          <label class="contact-form__field">
+            <span>Your name</span>
+            <input type="text" name="name" required maxlength="200" autocomplete="name" />
+          </label>
+          <label class="contact-form__field">
+            <span>Email</span>
+            <input type="email" name="email" required maxlength="200" autocomplete="email" />
+          </label>
+        </div>
+        <label class="contact-form__field">
+          <span>Subject (optional)</span>
+          <input type="text" name="subject" maxlength="200" />
+        </label>
+        <label class="contact-form__field">
+          <span>Message</span>
+          <textarea name="message" required maxlength="5000" rows="6"></textarea>
+        </label>
+        {/* Honeypot — hidden from humans by CSS. Bots fill it in and get rejected. */}
+        <label class="contact-form__honeypot" aria-hidden="true">
+          Website
+          <input type="text" name="website" tabindex="-1" autocomplete="off" />
+        </label>
+        <button type="submit" class="contact-form__submit">Send message</button>
+        <p class="contact-form__status" data-contact-status role="status" aria-live="polite"></p>
+      </form>
+    </Container>
+  </section>
+
+  <BlockRenderer blocks={page?.data.blocks || []} />
+</PageLayout>
+
+<style>
+  .contact-form {
+    margin-top: 3rem;
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .contact-form__row {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .contact-form__row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .contact-form__field {
+    display: grid;
+    gap: 0.4rem;
+    font-size: 0.95rem;
+  }
+
+  .contact-form__field span {
+    font-weight: 600;
+    color: inherit;
+    opacity: 0.85;
+  }
+
+  .contact-form__field input,
+  .contact-form__field textarea {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+    border-radius: var(--radius-base, 0.5rem);
+    background: color-mix(in srgb, currentColor 4%, transparent);
+    color: inherit;
+    font: inherit;
+  }
+
+  .contact-form__field textarea {
+    resize: vertical;
+    min-height: 9rem;
+  }
+
+  .contact-form__field input:focus,
+  .contact-form__field textarea:focus {
+    outline: 2px solid color-mix(in srgb, currentColor 40%, transparent);
+    outline-offset: 2px;
+  }
+
+  .contact-form__honeypot {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .contact-form__submit {
+    justify-self: start;
+    padding: 0.85rem 1.6rem;
+    border: 0;
+    border-radius: var(--radius-base, 0.5rem);
+    background: var(--brand-primary, #2563eb);
+    color: white;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .contact-form__submit[disabled] {
+    opacity: 0.6;
+    cursor: progress;
+  }
+
+  .contact-form__status {
+    margin: 0;
+    min-height: 1.5em;
+    font-size: 0.95rem;
+  }
+
+  .contact-form__status[data-state='ok'] {
+    color: #15803d;
+  }
+
+  .contact-form__status[data-state='error'] {
+    color: #b91c1c;
+  }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-contact-form]');
+  const status = document.querySelector<HTMLParagraphElement>('[data-contact-status]');
+
+  if (form && status) {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      const formData = new FormData(form);
+      const payload = {
+        name: String(formData.get('name') || ''),
+        email: String(formData.get('email') || ''),
+        subject: String(formData.get('subject') || ''),
+        message: String(formData.get('message') || ''),
+        website: String(formData.get('website') || ''),
+      };
+
+      status.dataset.state = '';
+      status.textContent = 'Sending…';
+      if (submit) submit.disabled = true;
+
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          status.dataset.state = 'error';
+          status.textContent = data.error
+            ? `Could not send: ${data.error}`
+            : 'Could not send. Please try again.';
+          return;
+        }
+        status.dataset.state = 'ok';
+        status.textContent = 'Thanks — your message is on its way.';
+        form.reset();
+      } catch (err) {
+        status.dataset.state = 'error';
+        status.textContent = 'Network error. Please try again.';
+      } finally {
+        if (submit) submit.disabled = false;
+      }
+    });
+  }
+</script>

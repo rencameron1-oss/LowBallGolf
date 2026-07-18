@@ -1,0 +1,73 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import HeroSection from '../components/hero/HeroSection.astro';
+import HeroSliderBlock from '@bands/ui/components/blocks/HeroSliderBlock.astro';
+import BlockRenderer from '../components/blocks/BlockRenderer.astro';
+import Container from '@bands/ui/components/ui/Container.astro';
+import PostGrid from '../components/posts/PostGrid.astro';
+import FeaturedPost from '../components/posts/FeaturedPost.astro';
+import TinaVisualEditing from '../components/tina/TinaVisualEditing.astro';
+import { getCollection, render } from 'astro:content';
+
+const page = (await getCollection('pages')).find((entry) => entry.id === 'writing');
+const Content = page ? (await render(page)).Content : null;
+const pageHeroSlider = page?.data.hero_slider;
+const pageHeroSlides = pageHeroSlider?.slides ?? [];
+const pageOgImage = pageHeroSlides[0]?.background_image || pageHeroSlides[0]?.image || page?.data.hero_image;
+
+const posts = (await getCollection('posts'))
+  .filter((entry) => !entry.data.draft)
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+const featuredPost = posts.find((entry) => entry.data.featured);
+const regularPosts = featuredPost ? posts.filter((entry) => entry.id !== featuredPost.id) : posts;
+---
+
+<PageLayout
+  title={page?.data.seo_title || page?.data.title || 'Writing'}
+  description={page?.data.seo_description}
+  ogImage={pageOgImage}
+>
+  <TinaVisualEditing collection="page" relativePath="writing.md" />
+
+  {pageHeroSlides.length > 0 ? (
+    <HeroSliderBlock {...pageHeroSlider} topOfPage={true} />
+  ) : (
+    <HeroSection
+      heading={page?.data.hero_heading || 'Writing and Ideas'}
+      subheading={page?.data.hero_subheading}
+      image={page?.data.hero_image}
+    />
+  )}
+
+  {(page?.data.intro || Content) && (
+    <section class="py-16 md:py-24">
+      <Container width="narrow">
+        {page?.data.intro && (
+          <p class="reveal text-lg md:text-xl text-brand-muted leading-relaxed">
+            {page.data.intro}
+          </p>
+        )}
+        {Content && (
+          <div class="prose prose-lg max-w-none mt-10 reveal reveal-delay-1">
+            <Content />
+          </div>
+        )}
+      </Container>
+    </section>
+  )}
+
+  <BlockRenderer blocks={page?.data.blocks || []} />
+
+  <section class="py-16 md:py-24">
+    <Container>
+      {posts.length > 0 ? (
+        <div class="space-y-12">
+          {featuredPost && <FeaturedPost post={featuredPost} />}
+          <PostGrid posts={regularPosts} columns={3} />
+        </div>
+      ) : (
+        <p class="text-brand-muted text-center py-8">No writing published yet.</p>
+      )}
+    </Container>
+  </section>
+</PageLayout>

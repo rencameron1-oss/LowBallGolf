@@ -1,0 +1,21 @@
+---
+interface Props {
+  style?: 'line' | 'dots' | 'space';
+}
+
+const { style = 'line' } = Astro.props;
+---
+
+{style === 'line' && (
+  <hr class="border-brand-border my-12" />
+)}
+{style === 'dots' && (
+  <div class="flex justify-center gap-2 my-12">
+    <span class="w-2 h-2 rounded-full bg-brand-accent"></span>
+    <span class="w-2 h-2 rounded-full bg-brand-accent"></span>
+    <span class="w-2 h-2 rounded-full bg-brand-accent"></span>
+  </div>
+)}
+{style === 'space' && (
+  <div class="my-16"></div>
+)}

@@ -1,0 +1,40 @@
+---
+interface Props {
+  category: string;
+  size?: 'sm' | 'md';
+  linked?: boolean;
+}
+
+const { category, size = 'sm', linked = true } = Astro.props;
+
+const label = category.charAt(0).toUpperCase() + category.slice(1);
+const href = `/articles/${category}`;
+
+const sizeClasses = {
+  sm: 'px-2 py-0.5 text-[10px]',
+  md: 'px-3 py-1 text-xs',
+};
+---
+
+{linked ? (
+  <a
+    href={href}
+    class:list={[
+      `badge-${category}`,
+      'inline-block rounded font-ui font-semibold uppercase tracking-wider text-white hover:opacity-90 transition-opacity',
+      sizeClasses[size],
+    ]}
+  >
+    {label}
+  </a>
+) : (
+  <span
+    class:list={[
+      `badge-${category}`,
+      'inline-block rounded font-ui font-semibold uppercase tracking-wider text-white',
+      sizeClasses[size],
+    ]}
+  >
+    {label}
+  </span>
+)}

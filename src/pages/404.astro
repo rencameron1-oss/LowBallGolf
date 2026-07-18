@@ -1,0 +1,22 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import Container from '@bands/ui/components/ui/Container.astro';
+import Button from '../components/ui/Button.astro';
+---
+
+<PageLayout title="Page Not Found">
+  <section class="py-24 md:py-32 min-h-[60vh] flex items-center">
+    <Container width="narrow">
+      <div class="text-center">
+        <p class="text-8xl md:text-9xl font-heading font-bold text-brand-accent">404</p>
+        <h1 class="mt-4 text-2xl md:text-3xl font-heading text-brand-text">Page not found</h1>
+        <p class="mt-3 text-brand-muted text-lg">The page you were looking for has moved, or it no longer exists in the new site structure.</p>
+        <div class="accent-line mx-auto mt-6 mb-8"></div>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button href="/">Back to Home</Button>
+          <Button href="/contact" variant="outline">Contact</Button>
+        </div>
+      </div>
+    </Container>
+  </section>
+</PageLayout>

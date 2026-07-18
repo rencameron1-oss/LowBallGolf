@@ -1,0 +1,200 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import HeroSection from '../components/hero/HeroSection.astro';
+import Container from '@bands/ui/components/ui/Container.astro';
+
+// Price data is fetched from Supabase at build time, so the page is static
+// and only as fresh as the latest deploy. The nightly scrape + rebuild keeps
+// it current once scheduling is wired up.
+const SUPABASE_URL = import.meta.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.SUPABASE_ANON_KEY;
+
+interface BestPrice {
+  product_id: number;
+  brand: string;
+  model: string;
+  is_ladies: boolean;
+  slug: string;
+  best_price: number;
+  worst_price: number;
+  spread: number;
+  retailer_count: number;
+}
+
+interface ListingRow {
+  product_id: number;
+  url: string;
+  retailers: { name: string };
+  prices: { price: number } | null;
+}
+
+let products: BestPrice[] = [];
+const cheapestStore = new Map<number, { name: string; url: string }>();
+let dataError = false;
+
+if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  try {
+    const get = async (path: string) => {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        headers: { apikey: SUPABASE_ANON_KEY },
+      });
+      if (!res.ok) throw new Error(`${path} -> ${res.status}`);
+      return res.json();
+    };
+
+    products = await get(
+      'product_best_price?select=*&order=spread.desc,brand.asc&limit=500'
+    );
+
+    const listings: ListingRow[] = await get(
+      'listings?select=product_id,url,retailers(name),prices(price)' +
+        '&match_status=in.(auto,confirmed)&active=is.true&in_stock=is.true&product_id=not.is.null'
+    );
+    for (const l of listings) {
+      if (!l.prices) continue;
+      const current = cheapestStore.get(l.product_id);
+      const best = products.find((p) => p.product_id === l.product_id)?.best_price;
+      if (best != null && Number(l.prices.price) === Number(best) && !current) {
+        cheapestStore.set(l.product_id, { name: l.retailers.name, url: l.url });
+      }
+    }
+  } catch {
+    dataError = true;
+  }
+} else {
+  dataError = true;
+}
+
+const updatedAt = new Date().toLocaleDateString('en-AU', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'Australia/Melbourne',
+});
+
+const dollars = (n: number) =>
+  Number(n).toLocaleString('en-AU', { style: 'currency', currency: 'AUD' });
+---
+
+<PageLayout
+  title="Compare Driver Prices"
+  description="Compare golf driver prices across major Australian retailers and find the cheapest store for every model."
+>
+  <HeroSection
+    heading="Driver Prices"
+    subheading="The same driver can differ by hundreds of dollars between Australian golf stores. Compare before you buy."
+  />
+
+  <section class="py-16 md:py-24">
+    <Container>
+      {dataError ? (
+        <p class="text-brand-muted text-center py-8">
+          Price data is being updated right now — check back shortly.
+        </p>
+      ) : (
+        <div class="space-y-6">
+          <p class="text-brand-muted text-sm">
+            {products.length} drivers tracked across Australian retailers.
+            Sorted by biggest saving. Prices last updated {updatedAt}.
+          </p>
+          <div class="overflow-x-auto">
+            <table class="price-table w-full text-left">
+              <thead>
+                <tr>
+                  <th>Driver</th>
+                  <th class="num">Best price</th>
+                  <th class="num">Highest price</th>
+                  <th class="num">You save</th>
+                  <th class="num">Stores</th>
+                  <th>Cheapest at</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((p) => {
+                  const store = cheapestStore.get(p.product_id);
+                  return (
+                    <tr>
+                      <td class="font-semibold">
+                        {p.brand} {p.model}
+                        {p.is_ladies && <span class="ladies-tag">Ladies</span>}
+                      </td>
+                      <td class="num best">{dollars(p.best_price)}</td>
+                      <td class="num text-brand-muted">
+                        {p.retailer_count > 1 ? dollars(p.worst_price) : '—'}
+                      </td>
+                      <td class="num save">
+                        {p.spread > 0 ? dollars(p.spread) : '—'}
+                      </td>
+                      <td class="num">{p.retailer_count}</td>
+                      <td>
+                        {store ? (
+                          <a href={store.url} rel="nofollow sponsored" target="_blank">
+                            {store.name}
+                          </a>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p class="text-brand-muted text-xs">
+            Prices are collected from retailer websites and can change at any
+            time. Always confirm the price on the retailer's site before buying.
+          </p>
+        </div>
+      )}
+    </Container>
+  </section>
+</PageLayout>
+
+<style>
+  .price-table {
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  .price-table th,
+  .price-table td {
+    padding: 0.65rem 0.9rem;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+    white-space: nowrap;
+  }
+
+  .price-table th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+  }
+
+  .price-table .num {
+    text-align: right;
+  }
+
+  .price-table .best {
+    font-weight: 700;
+  }
+
+  .price-table .save {
+    color: #15803d;
+    font-weight: 600;
+  }
+
+  .price-table a {
+    text-decoration: underline;
+  }
+
+  .ladies-tag {
+    margin-left: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+  }
+</style>

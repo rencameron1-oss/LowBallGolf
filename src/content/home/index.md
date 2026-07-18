@@ -117,6 +117,6 @@ blocks:
     background_image: /images/cloudflare-deploy.png
     background_style: image
     _template: ctaBannerBlock
-seo_title: Agentic Site Starter
-seo_description: 'A generic Astro, TinaCMS, GitHub and Cloudflare website template for novice agentic coders.'
+seo_title: 'LowballGolf — Compare Golf Equipment Prices in Australia'
+seo_description: 'Same club, different price. LowballGolf compares golf driver prices across major Australian retailers so you always play the low ball.'
 ---

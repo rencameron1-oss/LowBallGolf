@@ -55,8 +55,8 @@ const siteConfig: SiteConfig = {
     accentColor: '#2f7d6d',
   },
   booking: {
-    ctaText: 'Start Editing',
-    ctaUrl: '/contact',
+    ctaText: 'Compare Prices',
+    ctaUrl: '/drivers',
     emailSubject: "Enquiry from LowballGolf",
   },
   seo: {

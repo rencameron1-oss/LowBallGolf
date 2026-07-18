@@ -56,12 +56,28 @@ const dbPatch  = (path, patch) => db("PATCH", path, patch, { Prefer: "return=min
 // ---------------- store fetchers ----------------
 // Each returns [{ retailer_product_id, title, url, image_url, price, rrp, in_stock }]
 
+// Shopify stores with Markets enabled geo-price by request IP (Golf
+// Paradise served USD to GitHub's US runners). Ask for Australia
+// explicitly, then verify via cart.js — and refuse to ingest anything
+// if the store still answers in another currency.
+const SHOPIFY_AU = { "User-Agent": UA, Cookie: "localization=AU; cart_currency=AUD" };
+
+async function assertShopifyAUD(base) {
+  const res = await fetch(`${base}/cart.js`, { headers: SHOPIFY_AU });
+  if (!res.ok) return; // no cart endpoint: single-currency store, safe
+  const currency = (await res.json())?.currency;
+  if (currency && currency !== "AUD") {
+    throw new Error(`store served ${currency} prices instead of AUD; skipping to avoid corrupt data`);
+  }
+}
+
 async function fetchShopify(base, collectionHandle) {
+  await assertShopifyAUD(base);
   const items = [];
   for (let page = 1; page <= 10; page++) {
     const res = await fetch(
       `${base}/collections/${collectionHandle}/products.json?limit=250&page=${page}`,
-      { headers: { "User-Agent": UA } });
+      { headers: SHOPIFY_AU });
     if (!res.ok) break;
     const { products = [] } = await res.json();
     if (products.length === 0) break;

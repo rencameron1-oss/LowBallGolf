@@ -5,7 +5,7 @@
   "footer_note": "LowballGolf. Built with Astro, TinaCMS, GitHub and Netlify.",
   "brand": {
     "color_scheme": "editorial",
-    "logo_mode": "initials",
+    "logo_mode": "text",
     "logo_text": "LowballGolf",
     "logo_initials": "L",
     "logo_shape": "soft-square",

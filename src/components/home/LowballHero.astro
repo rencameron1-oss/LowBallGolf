@@ -1,9 +1,93 @@
 ---
 // LowballGolf homepage hero, implemented from the Claude Design comp
-// "LowballGolf Hero.dc.html". Dark fairway-green backdrop, condensed
+// "LowballGolf Hero.dc.html". Fairway photo backdrop (Cristina Anne
+// Costello via Unsplash, free license) under a green tint, condensed
 // wordmark whose second O is a golf ball that flies in along a dotted
-// trail, and a price-ticket card demonstrating the spread on one club.
-// Retailer names on the card are deliberately fictional.
+// trail, and a price-ticket card showing a real club's spread, fetched
+// from Supabase at build time. Falls back to a fictional demo card when
+// the database is unreachable so the build never breaks.
+
+interface HeroRow {
+  store: string;
+  price: number;
+}
+
+interface HeroCard {
+  title: string;
+  meta: string;
+  rows: HeroRow[]; // sorted dearest-first; the last row is the best price
+  spread: number;
+}
+
+const fallbackCard: HeroCard = {
+  title: 'PING G440K DRIVER',
+  meta: '3 RETAILERS · AUD',
+  rows: [
+    { store: 'FAIRWAY DIRECT', price: 1199.95 },
+    { store: 'PRO SHOP CENTRAL', price: 1149.0 },
+    { store: 'BIRDIE SUPPLY CO.', price: 1019.96 },
+  ],
+  spread: 179.99,
+};
+
+let card = fallbackCard;
+
+const SUPABASE_URL = import.meta.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.SUPABASE_ANON_KEY;
+
+if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  try {
+    const get = async (path: string) => {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        headers: { apikey: SUPABASE_ANON_KEY },
+      });
+      if (!res.ok) throw new Error(`${path} -> ${res.status}`);
+      return res.json();
+    };
+
+    // The most persuasive real example: biggest spread among clubs
+    // stocked by 3+ stores.
+    const [best] = await get(
+      'product_best_price?select=*&retailer_count=gte.3&order=spread.desc&limit=1'
+    );
+    if (best) {
+      const listings: { retailers: { name: string }; prices: { price: number } | null }[] =
+        await get(
+          `listings?select=retailers(name),prices(price)&product_id=eq.${best.product_id}` +
+            '&active=is.true&in_stock=is.true&match_status=in.(auto,confirmed)'
+        );
+      // One row per retailer at its cheapest listing.
+      const perStore = new Map<string, number>();
+      for (const l of listings) {
+        if (!l.prices) continue;
+        const name = l.retailers.name.toUpperCase();
+        const price = Number(l.prices.price);
+        if (!perStore.has(name) || price < perStore.get(name)!) perStore.set(name, price);
+      }
+      const sorted = [...perStore.entries()]
+        .map(([store, price]) => ({ store, price }))
+        .sort((a, b) => b.price - a.price);
+      if (sorted.length >= 3) {
+        // Dearest, middle, cheapest — three rows like the design.
+        const rows = [sorted[0], sorted[Math.floor(sorted.length / 2)], sorted[sorted.length - 1]];
+        card = {
+          title: `${best.brand} ${best.model} DRIVER`.toUpperCase(),
+          meta: `${best.retailer_count} RETAILERS · AUD`,
+          rows,
+          spread: Number(best.spread),
+        };
+      }
+    }
+  } catch {
+    // keep fallbackCard
+  }
+}
+
+const dollars = (n: number) =>
+  '$' + n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const bestRow = card.rows[card.rows.length - 1];
+const normalRows = card.rows.slice(0, -1);
 ---
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -44,21 +128,19 @@
 
   <div class="lb-card">
     <div class="lb-card-head">
-      <span class="lb-card-title">PING G440K DRIVER</span>
-      <span class="lb-card-meta">3 RETAILERS &middot; AUD</span>
+      <span class="lb-card-title">{card.title}</span>
+      <span class="lb-card-meta">{card.meta}</span>
     </div>
-    <div class="lb-row">
-      <span class="lb-store">FAIRWAY DIRECT</span>
-      <span class="lb-price" data-odo="1199.95">$1,199.95</span>
-    </div>
-    <div class="lb-row">
-      <span class="lb-store">PRO SHOP CENTRAL</span>
-      <span class="lb-price" data-odo="1149.00">$1,149.00</span>
-    </div>
+    {normalRows.map((row) => (
+      <div class="lb-row">
+        <span class="lb-store">{row.store}</span>
+        <span class="lb-price" data-odo={String(row.price)}>{dollars(row.price)}</span>
+      </div>
+    ))}
     <div class="lb-row lb-row-best">
-      <span class="lb-store lb-store-best">BIRDIE SUPPLY CO.</span>
+      <span class="lb-store lb-store-best">{bestRow.store}</span>
       <span class="lb-best-wrap">
-        <span class="lb-price lb-price-best" data-odo="1019.96">$1,019.96</span>
+        <span class="lb-price lb-price-best" data-odo={String(bestRow.price)}>{dollars(bestRow.price)}</span>
         <svg class="lb-circle" viewBox="0 0 140 56" preserveAspectRatio="none">
           <path
             d="M 128 26 C 127 9, 98 3, 68 4 C 34 5, 8 12, 7 28 C 6 45, 38 54, 74 52 C 107 50, 133 44, 131 29 C 130 20, 121 13, 110 11"
@@ -67,7 +149,7 @@
         </svg>
       </span>
       <span class="lb-tag-pos" id="tagPos">
-        <span class="lb-tag">SPREAD: $179.99</span>
+        <span class="lb-tag">SPREAD: {dollars(card.spread)}</span>
       </span>
     </div>
   </div>
@@ -108,11 +190,22 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 56px 20px 72px;
+    padding: 140px 20px 72px;
     box-sizing: border-box;
-    background: radial-gradient(120% 90% at 50% 28%, #0d3527 0%, #092619 72%);
+    background:
+      radial-gradient(120% 90% at 50% 28%, rgba(13, 53, 39, 0.62) 0%, rgba(9, 38, 25, 0.86) 78%),
+      url('/images/hero-fairway.jpg') center / cover no-repeat #092619;
     color: #f2f4ef;
     text-align: center;
+    /* Pull the hero up behind the fixed translucent header so the photo
+       runs underneath it (the layout inserts a spacer we must cancel). */
+    margin-top: calc(-4.5rem - max(env(safe-area-inset-top), 0.7rem));
+  }
+
+  @media (min-width: 768px) {
+    .lb-hero {
+      margin-top: calc(-5rem - max(env(safe-area-inset-top), 0rem));
+    }
   }
 
   .lb-kicker {

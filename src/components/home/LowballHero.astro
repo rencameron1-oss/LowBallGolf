@@ -604,24 +604,19 @@ const normalRows = card.rows.slice(0, -1);
     color: #f5c944;
   }
 
-  /* Five popular drivers, left to right above the ticket */
+  /* Five popular drivers, stretched across the page above the ticket */
   .lb-tabs {
     display: flex;
-    gap: 6px;
-    width: min(560px, 92vw);
+    gap: 8px;
+    width: min(1120px, 94vw);
     margin-top: 34px;
-    overflow-x: auto;
-    scrollbar-width: none;
     animation: om-fadeup 0.5s ease-out 1.05s backwards;
   }
 
-  .lb-tabs::-webkit-scrollbar {
-    display: none;
-  }
-
   .lb-tab {
-    flex-shrink: 0;
-    padding: 8px 12px;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 9px 10px;
     background: rgba(7, 30, 20, 0.6);
     border: 1px solid rgba(201, 212, 201, 0.3);
     border-radius: 5px;
@@ -631,8 +626,26 @@ const normalRows = card.rows.slice(0, -1);
     font-weight: 500;
     letter-spacing: 0.08em;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
     cursor: pointer;
     transition: all 0.15s ease;
+  }
+
+  @media (max-width: 760px) {
+    .lb-tabs {
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .lb-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .lb-tab {
+      flex: 0 0 auto;
+    }
   }
 
   .lb-tab:hover {

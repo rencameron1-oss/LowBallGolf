@@ -60,7 +60,26 @@ const logoFontStyle = `font-family: ${logoFont.family}`;
     </span>
   </span>
 ) : (
-  <span class:list={['tracking-tight', textClass, className]} style={logoFontStyle}>
-    {logoAlt}
+  <span class:list={['lb-brand', textClass, className]}>
+    <em>LOWBALL</em>GOLF
   </span>
 )}
+
+<style>
+  /* Brand wordmark in the hero's style: condensed Archivo, gold LOWBALL,
+     GOLF in the surrounding text colour (white over the hero, dark on
+     light bars). */
+  .lb-brand {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900;
+    font-stretch: 72%;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .lb-brand em {
+    font-style: normal;
+    color: #f5c944;
+  }
+</style>

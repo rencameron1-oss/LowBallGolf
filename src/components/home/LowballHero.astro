@@ -60,7 +60,9 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     };
 
     const products: { product_id: number; brand: string; model: string; slug: string; spread: number }[] =
-      await get('product_best_price?select=product_id,brand,model,slug,spread&order=spread.desc');
+      await get(
+        'product_best_price?select=product_id,brand,model,slug,spread&category=eq.driver&order=spread.desc'
+      );
     const listings: {
       product_id: number;
       retailers: { name: string };

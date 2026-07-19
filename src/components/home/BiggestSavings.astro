@@ -6,7 +6,9 @@ import { fetchClubs, dollars } from '../../utils/priceData';
 
 const clubs = await fetchClubs();
 
+// Driver-only until the putter/wedge data passes review.
 const rows = clubs
+  .filter((c) => c.category === 'driver')
   .filter((c) => c.offers.length >= 2)
   .map((c) => {
     const best = c.offers[0];

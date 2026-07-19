@@ -5,7 +5,7 @@ import { fetchClubs, dollars } from '../utils/priceData';
 // Card grid of every tracked driver with client-side filtering. Data is
 // fetched at build time; the page is static and refreshed by the nightly
 // scrape + rebuild.
-const clubs = await fetchClubs();
+const clubs = (await fetchClubs()).filter((c) => c.category === 'driver');
 
 const cards = clubs
   .map((c) => {

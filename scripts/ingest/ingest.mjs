@@ -131,26 +131,70 @@ async function fetchWoo(base, search) {
   return items;
 }
 
-// Which fetcher + arguments per retailer slug. GolfBox (Searchanise) and
-// Golf Clearance Outlet (Magento scrape) are deliberately not wired yet.
+// Which fetchers per retailer slug, per category. A category may pull
+// several collections (House of Golf splits shelf and custom stock).
+// GolfBox (Searchanise) and Golf Clearance Outlet (Magento scrape) are
+// deliberately not wired yet.
+const shopify = (...handles) => (r) =>
+  Promise.all(handles.map((h) => fetchShopify(r.website_url, h))).then((lists) => {
+    const byId = new Map();
+    for (const item of lists.flat()) {
+      if (!byId.has(item.retailer_product_id)) byId.set(item.retailer_product_id, item);
+    }
+    return [...byId.values()];
+  });
+
 const SOURCES = {
-  "drummond-golf":    (r) => fetchShopify(r.website_url, "clubs-drivers"),
-  "power-golf":       (r) => fetchShopify(r.website_url, "drivers"),
-  "golf-paradise":    (r) => fetchShopify(r.website_url, "driver"),
-  "the-golf-factory": (r) => fetchWoo(r.website_url, "driver"),
-  "house-of-golf":    (r) => fetchShopify(r.website_url, "custom-drivers"),
+  "drummond-golf": [
+    { category: "driver", fetch: shopify("clubs-drivers") },
+    { category: "putter", fetch: shopify("golf-clubs-putters") },
+    { category: "wedge",  fetch: shopify("golf-clubs-wedges") },
+  ],
+  "power-golf": [
+    { category: "driver", fetch: shopify("drivers") },
+    { category: "putter", fetch: shopify("putters") },
+    { category: "wedge",  fetch: shopify("wedges") },
+  ],
+  "golf-paradise": [
+    { category: "driver", fetch: shopify("driver") },
+    { category: "putter", fetch: shopify("putter") },
+    { category: "wedge",  fetch: shopify("wedges") },
+  ],
+  "the-golf-factory": [
+    { category: "driver", fetch: (r) => fetchWoo(r.website_url, "driver") },
+    { category: "putter", fetch: (r) => fetchWoo(r.website_url, "putter") },
+    { category: "wedge",  fetch: (r) => fetchWoo(r.website_url, "wedge") },
+  ],
+  "house-of-golf": [
+    { category: "driver", fetch: shopify("custom-drivers") },
+    { category: "putter", fetch: shopify("putters", "custom-putters") },
+    { category: "wedge",  fetch: shopify("wedges", "custom-wedges") },
+  ],
 };
 
 // ---------------- per-retailer ingestion ----------------
 
 async function ingestRetailer(retailer) {
-  const fetchCatalog = SOURCES[retailer.slug];
-  if (!fetchCatalog) { console.log(`- ${retailer.name}: no source wired, skipping`); return; }
+  const sources = SOURCES[retailer.slug];
+  if (!sources) { console.log(`- ${retailer.name}: no source wired, skipping`); return; }
 
   const [run] = await dbInsert("scrape_runs", [{ retailer_id: retailer.id }]);
   try {
-    const scraped = (await fetchCatalog(retailer)).filter((i) => !isAccessory(i.title));
-    console.log(`- ${retailer.name}: ${scraped.length} listings fetched`);
+    // Fetch every category, tagging items so the matcher knows the context.
+    // Dedupe across categories by store product id (first category wins).
+    const byExtId = new Map();
+    const perCat = [];
+    for (const src of sources) {
+      const items = (await src.fetch(retailer)).filter((i) => !isAccessory(i.title));
+      perCat.push(`${src.category}:${items.length}`);
+      for (const item of items) {
+        if (!byExtId.has(item.retailer_product_id)) {
+          byExtId.set(item.retailer_product_id, { ...item, category: src.category });
+        }
+      }
+    }
+    const scraped = [...byExtId.values()];
+    console.log(`- ${retailer.name}: ${scraped.length} listings fetched (${perCat.join(", ")})`);
 
     // 1. upsert listings. Only these columns are sent, so match_status,
     //    product_id and first_seen_at are preserved on existing rows.
@@ -204,11 +248,12 @@ async function ingestRetailer(retailer) {
     // 5. auto-match listings that are still unmatched
     let matched = 0;
     for (const listing of listings.filter((l) => l.match_status === "unmatched")) {
-      const p = extractProduct(listing.title);
+      const category = byExtId.get(listing.retailer_product_id)?.category ?? "driver";
+      const p = extractProduct(listing.title, "", category);
       if (!p || p.confidence < AUTO_MATCH_THRESHOLD) continue;
       const [product] = await dbUpsert("products", [{
-        brand: p.brand, model: p.model, category: "driver",
-        is_ladies: p.isLadies, slug: productSlug(p),
+        brand: p.brand, model: p.model, category,
+        is_ladies: p.isLadies, slug: productSlug(p, category),
       }], "brand,model,category,is_ladies");
       await dbPatch(`listings?id=eq.${listing.id}&match_status=eq.unmatched`, {
         product_id: product.id, match_status: "auto", match_confidence: p.confidence,

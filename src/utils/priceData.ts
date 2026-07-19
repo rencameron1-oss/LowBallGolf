@@ -22,6 +22,7 @@ export interface ClubData {
   title: string;
   brand: string;
   model: string;
+  category: string; // 'driver' | 'putter' | 'wedge' | ...
   image: string | null;
   isLadies: boolean;
   hands: ('right' | 'left')[]; // detected from listing titles; right assumed when unstated
@@ -161,11 +162,16 @@ export async function fetchClubs(): Promise<ClubData[]> {
       }
       if (hands.size === 0) hands.add('right');
 
+      const suffix =
+        { driver: 'DRIVER', putter: 'PUTTER', wedge: 'WEDGE', iron_set: 'IRONS' }[
+          p.category as string
+        ] ?? '';
       clubs.push({
         slug: p.slug,
-        title: `${p.brand} ${p.model} ${p.category === 'driver' ? 'DRIVER' : ''}`.trim().toUpperCase(),
+        title: `${p.brand} ${p.model} ${suffix}`.trim().toUpperCase(),
         brand: p.brand,
         model: p.model,
+        category: p.category,
         image: pls.find((l) => l.image_url)?.image_url ?? null,
         isLadies: p.is_ladies === true,
         hands: [...hands],

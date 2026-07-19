@@ -54,6 +54,7 @@ const NOISE = new Set([
   "senior", "flex", "shaft", "graphite", "steel", "custom", "the", "stock",
   "with", "and", "new", "2023", "2024", "2025", "2026",
   "degree", "deg", "loft", "bounce",
+  "pre", "order", "preorder", "web", "online",
 ]);
 
 // Bare two-digit year tokens are noise for drivers/wedges, but on putters
@@ -115,7 +116,7 @@ export function extractProduct(rawTitle, vendor = "", category = "driver") {
   const title = decodeEntities(rawTitle);
   if (isAccessory(title)) return null;
 
-  const isLadies = /\b(ladies|women'?s|womens)\b/i.test(title);
+  const isLadies = /\b(ladies|women'?s?|womens)\b/i.test(title);
 
   // strip punctuation AFTER the ladies test (apostrophes matter there)
   const t = applySynonyms(
@@ -145,7 +146,7 @@ export function extractProduct(rawTitle, vendor = "", category = "driver") {
       !NOISE.has(w) &&
       !BRANDS.includes(w) &&
       !brand.split(" ").includes(w) &&
-      !/^(ladies|women.?s|womens)$/.test(w) &&
+      !/^(ladies|women.?s?|womens|women)$/.test(w) &&
       (keepNumbers ? true : !/^\d+(\.\d+)?$/.test(w)) &&
       (keepNumbers || !YEAR_TOKENS.has(w)))
     .slice(0, 4);

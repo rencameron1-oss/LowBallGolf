@@ -1,5 +1,7 @@
 [build]
-  command = "npm run build"
+  # Wrapper retries the flaky TinaCMS step (occasional indexing deadlock)
+  # with a per-attempt cap instead of hitting Netlify's build time limit.
+  command = "bash scripts/netlify-build.sh"
   publish = "dist"
 
 [build.environment]

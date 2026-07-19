@@ -6,7 +6,15 @@ export interface NavItem {
 
 export const mainNav: NavItem[] = [
   { label: 'Home', href: '/' },
-  { label: 'Driver Prices', href: '/drivers' },
+  {
+    label: 'Clubs',
+    href: '/drivers',
+    children: [
+      { label: 'Drivers', href: '/drivers' },
+      { label: 'Putters', href: '/putters' },
+      { label: 'Wedges', href: '/wedges' },
+    ],
+  },
   { label: 'Guides', href: '/guides' },
   { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },

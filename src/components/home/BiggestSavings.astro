@@ -6,9 +6,7 @@ import { fetchClubs, dollars } from '../../utils/priceData';
 
 const clubs = await fetchClubs();
 
-// Driver-only until the putter/wedge data passes review.
 const rows = clubs
-  .filter((c) => c.category === 'driver')
   .filter((c) => c.offers.length >= 2)
   .map((c) => {
     const best = c.offers[0];
@@ -16,6 +14,7 @@ const rows = clubs
     return {
       slug: c.slug,
       title: c.title,
+      category: c.category.toUpperCase(),
       bestPrice: best.price,
       bestStore: best.name,
       worstPrice: worst.price,
@@ -50,6 +49,7 @@ const updated = new Date().toLocaleDateString('en-AU', {
                 <span class="bs-name">{r.title}</span>
                 <span class="bs-detail">{dollars(r.bestPrice)} at {r.bestStore.toUpperCase()} &middot; {r.stores} STORES &middot; DEAREST {dollars(r.worstPrice)}</span>
               </span>
+              <span class="bs-cat">{r.category}</span>
               <span class="bs-save">SAVE {dollars(r.saving)}</span>
               <span class="bs-arrow" aria-hidden="true">→</span>
             </a>
@@ -172,6 +172,17 @@ const updated = new Date().toLocaleDateString('en-AU', {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .bs-cat {
+    flex-shrink: 0;
+    padding: 4px 8px;
+    border: 1px solid rgba(201, 212, 201, 0.35);
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: #c9d4c9;
   }
 
   .bs-save {

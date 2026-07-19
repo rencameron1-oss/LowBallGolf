@@ -37,14 +37,23 @@ let card = fallbackCard;
 interface IndexEntry {
   t: string; // display title, uppercase
   s: string; // club page slug
+  c: string; // category
   rows: [string, number][]; // [store, price], dearest first
 }
 let searchIndex: IndexEntry[] = [];
 let featuredList: IndexEntry[] = [];
+let featuredByCat: Record<string, string[]> = {};
 let featuredSlug: string | null = null;
 
+const CATS = [
+  { id: 'driver', label: 'Drivers' },
+  { id: 'wedge', label: 'Wedges' },
+  { id: 'putter', label: 'Putters' },
+];
+const SUFFIX: Record<string, string> = { driver: 'DRIVER', putter: 'PUTTER', wedge: 'WEDGE' };
+
 // Tab label: brand + model without the trailing category word.
-const tabLabel = (t: string) => t.replace(/ DRIVER$/, '');
+const tabLabel = (t: string) => t.replace(/ (DRIVER|PUTTER|WEDGE)$/, '');
 
 const SUPABASE_URL = import.meta.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.SUPABASE_ANON_KEY;
@@ -59,9 +68,9 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       return res.json();
     };
 
-    const products: { product_id: number; brand: string; model: string; slug: string; spread: number }[] =
+    const products: { product_id: number; brand: string; model: string; slug: string; category: string; spread: number }[] =
       await get(
-        'product_best_price?select=product_id,brand,model,slug,spread&category=eq.driver&order=spread.desc'
+        'product_best_price?select=product_id,brand,model,slug,category,spread&category=in.(driver,putter,wedge)&order=spread.desc'
       );
     const listings: {
       product_id: number;
@@ -87,16 +96,29 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       const perStore = byProduct.get(p.product_id);
       if (!perStore || perStore.size === 0) continue;
       const rows = [...perStore.entries()].sort((a, b) => b[1] - a[1]) as [string, number][];
-      searchIndex.push({ t: `${p.brand} ${p.model} DRIVER`.toUpperCase(), s: p.slug, rows });
+      searchIndex.push({
+        t: `${p.brand} ${p.model} ${SUFFIX[p.category] ?? ''}`.trim().toUpperCase(),
+        s: p.slug,
+        c: p.category,
+        rows,
+      });
     }
 
-    // Featured strip: the five biggest-spread clubs at 3+ stores
-    // (products arrive sorted by spread). The first opens by default.
-    featuredList = searchIndex.filter((e) => e.rows.length >= 3).slice(0, 5);
+    // Featured strips: per category, the five biggest-spread clubs at 2+
+    // stores (entries arrive sorted by spread). Drivers open by default.
+    for (const cat of CATS) {
+      featuredByCat[cat.id] = searchIndex
+        .filter((e) => e.c === cat.id && e.rows.length >= 2)
+        .slice(0, 5)
+        .map((e) => e.s);
+    }
+    featuredList = featuredByCat.driver
+      .map((s) => searchIndex.find((e) => e.s === s)!)
+      .filter(Boolean);
     const featured = featuredList[0];
     if (featured) {
       const r = featured.rows;
-      const picks = [r[0], r[Math.floor(r.length / 2)], r[r.length - 1]];
+      const picks = r.length >= 3 ? [r[0], r[Math.floor(r.length / 2)], r[r.length - 1]] : r;
       featuredSlug = featured.s;
       card = {
         title: featured.t,
@@ -172,8 +194,24 @@ const normalRows = card.rows.slice(0, -1);
     </div>
   )}
 
+  {searchIndex.length > 0 && (
+    <div class="lb-cats" role="tablist" aria-label="Club category">
+      {CATS.map((c, i) => (
+        <button
+          type="button"
+          role="tab"
+          class:list={['lb-cat', i === 0 && 'active']}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          data-cat={c.id}
+        >
+          {c.label}
+        </button>
+      ))}
+    </div>
+  )}
+
   {featuredList.length > 1 && (
-    <div class="lb-tabs" role="tablist" aria-label="Popular drivers">
+    <div class="lb-tabs" id="lbTabs" role="tablist" aria-label="Popular clubs">
       {featuredList.map((e, i) => (
         <button
           type="button"
@@ -229,6 +267,7 @@ const normalRows = card.rows.slice(0, -1);
 </div>
 
 <script type="application/json" id="lb-data" set:html={JSON.stringify(searchIndex).replace(/</g, '\\u003c')} />
+<script type="application/json" id="lb-featured" set:html={JSON.stringify(featuredByCat).replace(/</g, '\\u003c')} />
 
 <style is:global>
   @keyframes om-flight {
@@ -606,12 +645,49 @@ const normalRows = card.rows.slice(0, -1);
     color: #f5c944;
   }
 
-  /* Five popular drivers, stretched across the page above the ticket */
+  /* Category selector between search and the popular strip */
+  .lb-cats {
+    display: inline-flex;
+    gap: 4px;
+    margin-top: 30px;
+    padding: 4px;
+    background: rgba(7, 30, 20, 0.6);
+    border: 1px solid rgba(201, 212, 201, 0.3);
+    border-radius: 7px;
+    animation: om-fadeup 0.5s ease-out 1s backwards;
+  }
+
+  .lb-cat {
+    padding: 8px 22px;
+    background: transparent;
+    border: 0;
+    border-radius: 5px;
+    color: #c9d4c9;
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800;
+    font-stretch: 80%;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .lb-cat:hover {
+    color: #f5c944;
+  }
+
+  .lb-cat.active {
+    background: #f5c944;
+    color: #0d3527;
+  }
+
+  /* Five popular clubs, stretched across the page above the ticket */
   .lb-tabs {
     display: flex;
     gap: 8px;
     width: min(1120px, 94vw);
-    margin-top: 34px;
+    margin-top: 18px;
     animation: om-fadeup 0.5s ease-out 1.05s backwards;
   }
 
@@ -790,17 +866,23 @@ const normalRows = card.rows.slice(0, -1);
     });
   }
 
-  // ---- popular-driver tabs: hover/click swaps the ticket with animation ----
-  const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('.lb-tab'));
+  // ---- category selector + popular tabs: hover/click swaps the ticket ----
+  const featured: Record<string, string[]> = JSON.parse(
+    document.getElementById('lb-featured')?.textContent || '{}'
+  );
+  const tabsEl = document.getElementById('lbTabs');
+  const catBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('.lb-cat'));
   const rowsEl = document.getElementById('lbRows');
   const titleEl = document.getElementById('lbTitle');
   const metaEl = document.getElementById('lbMeta');
   const cardEl = document.getElementById('lbCard');
   const moreEl = document.getElementById('lbMore') as HTMLAnchorElement | null;
 
-  if (tabs.length && rowsEl && titleEl && metaEl && cardEl) {
+  if (tabsEl && rowsEl && titleEl && metaEl && cardEl) {
     const bySlug = new Map(data.map((e) => [e.s, e]));
-    let activeSlug = tabs[0]?.dataset.slug ?? '';
+    const tabLabel = (t: string) => t.replace(/ (DRIVER|PUTTER|WEDGE)$/, '');
+    let activeSlug =
+      tabsEl.querySelector<HTMLButtonElement>('.lb-tab')?.dataset.slug ?? '';
 
     const circleSvg = `<svg class="lb-circle" viewBox="0 0 140 56" preserveAspectRatio="none"><path d="M 128 26 C 127 9, 98 3, 68 4 C 34 5, 8 12, 7 28 C 6 45, 38 54, 74 52 C 107 50, 133 44, 131 29 C 130 20, 121 13, 110 11" fill="none" stroke="#e8503a" stroke-width="3.4" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0"></path></svg>`;
 
@@ -838,7 +920,7 @@ const normalRows = card.rows.slice(0, -1);
       const entry = bySlug.get(slug);
       if (!entry) return;
       activeSlug = slug;
-      tabs.forEach((t) => {
+      tabsEl.querySelectorAll<HTMLButtonElement>('.lb-tab').forEach((t) => {
         const on = t === tab;
         t.classList.toggle('active', on);
         t.setAttribute('aria-selected', String(on));
@@ -846,10 +928,43 @@ const normalRows = card.rows.slice(0, -1);
       renderCard(entry);
     };
 
-    tabs.forEach((tab) => {
-      tab.addEventListener('mouseenter', () => activate(tab));
-      tab.addEventListener('click', () => activate(tab));
-      tab.addEventListener('focus', () => activate(tab));
+    // Delegated events so category switches (which rebuild the tabs) keep working.
+    const tabFromEvent = (ev: Event) =>
+      (ev.target as HTMLElement).closest?.('.lb-tab') as HTMLButtonElement | null;
+    tabsEl.addEventListener('mouseover', (ev) => {
+      const tab = tabFromEvent(ev);
+      if (tab) activate(tab);
     });
+    tabsEl.addEventListener('click', (ev) => {
+      const tab = tabFromEvent(ev);
+      if (tab) activate(tab);
+    });
+    tabsEl.addEventListener('focusin', (ev) => {
+      const tab = tabFromEvent(ev);
+      if (tab) activate(tab);
+    });
+
+    // Category selector rebuilds the strip and opens its top club.
+    const setCategory = (btn: HTMLButtonElement) => {
+      const cat = btn.dataset.cat ?? 'driver';
+      catBtns.forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', String(on));
+      });
+      const slugs = (featured[cat] ?? []).filter((s) => bySlug.has(s));
+      tabsEl.innerHTML = slugs
+        .map(
+          (s, i) =>
+            `<button type="button" role="tab" class="lb-tab${i === 0 ? ' active' : ''}" aria-selected="${i === 0}" data-slug="${s}">${esc(tabLabel(bySlug.get(s)!.t))}</button>`
+        )
+        .join('');
+      const first = slugs[0] && bySlug.get(slugs[0]);
+      if (first) {
+        activeSlug = ''; // force re-render even if same club
+        activate(tabsEl.querySelector<HTMLButtonElement>('.lb-tab')!);
+      }
+    };
+    catBtns.forEach((b) => b.addEventListener('click', () => setCategory(b)));
   }
 </script>

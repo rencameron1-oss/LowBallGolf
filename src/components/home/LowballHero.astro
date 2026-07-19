@@ -40,7 +40,11 @@ interface IndexEntry {
   rows: [string, number][]; // [store, price], dearest first
 }
 let searchIndex: IndexEntry[] = [];
+let featuredList: IndexEntry[] = [];
 let featuredSlug: string | null = null;
+
+// Tab label: brand + model without the trailing category word.
+const tabLabel = (t: string) => t.replace(/ DRIVER$/, '');
 
 const SUPABASE_URL = import.meta.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.SUPABASE_ANON_KEY;
@@ -84,9 +88,10 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       searchIndex.push({ t: `${p.brand} ${p.model} DRIVER`.toUpperCase(), s: p.slug, rows });
     }
 
-    // Featured card: biggest spread among clubs at 3+ stores (products
-    // arrive sorted by spread, so the first qualifying entry wins).
-    const featured = searchIndex.find((e) => e.rows.length >= 3);
+    // Featured strip: the five biggest-spread clubs at 3+ stores
+    // (products arrive sorted by spread). The first opens by default.
+    featuredList = searchIndex.filter((e) => e.rows.length >= 3).slice(0, 5);
+    const featured = featuredList[0];
     if (featured) {
       const r = featured.rows;
       const picks = [r[0], r[Math.floor(r.length / 2)], r[r.length - 1]];
@@ -165,6 +170,22 @@ const normalRows = card.rows.slice(0, -1);
     </div>
   )}
 
+  {featuredList.length > 1 && (
+    <div class="lb-tabs" role="tablist" aria-label="Popular drivers">
+      {featuredList.map((e, i) => (
+        <button
+          type="button"
+          role="tab"
+          class:list={['lb-tab', i === 0 && 'active']}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          data-slug={e.s}
+        >
+          {tabLabel(e.t)}
+        </button>
+      ))}
+    </div>
+  )}
+
   <div class="lb-card" id="lbCard">
     <div class="lb-card-head">
       <span class="lb-card-title" id="lbTitle">{card.title}</span>
@@ -194,7 +215,7 @@ const normalRows = card.rows.slice(0, -1);
       </div>
     </div>
     {featuredSlug && (
-      <a class="lb-card-more" href={`/clubs/${featuredSlug}`}>FULL PRICE HISTORY →</a>
+      <a class="lb-card-more" id="lbMore" href={`/clubs/${featuredSlug}`}>FULL PRICE HISTORY →</a>
     )}
   </div>
 
@@ -583,6 +604,66 @@ const normalRows = card.rows.slice(0, -1);
     color: #f5c944;
   }
 
+  /* Five popular drivers, left to right above the ticket */
+  .lb-tabs {
+    display: flex;
+    gap: 6px;
+    width: min(560px, 92vw);
+    margin-top: 34px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    animation: om-fadeup 0.5s ease-out 1.05s backwards;
+  }
+
+  .lb-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lb-tab {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    background: rgba(7, 30, 20, 0.6);
+    border: 1px solid rgba(201, 212, 201, 0.3);
+    border-radius: 5px;
+    color: #c9d4c9;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .lb-tab:hover {
+    color: #f5c944;
+    border-color: rgba(245, 201, 68, 0.6);
+  }
+
+  .lb-tab.active {
+    background: #f5c944;
+    border-color: #f5c944;
+    color: #0d3527;
+    font-weight: 600;
+  }
+
+  /* Compressed animation timeline when a tab swaps the card */
+  .lb-card.lb-replay {
+    animation: om-cardin 0.3s ease-out backwards;
+  }
+
+  .lb-card.lb-replay .lb-row-best {
+    animation: om-lift 0.35s ease-out 0.55s backwards;
+  }
+
+  .lb-card.lb-replay .lb-circle path {
+    animation: om-draw 0.5s ease-in-out 0.65s backwards;
+  }
+
+  .lb-card.lb-replay .lb-tag {
+    animation: om-stamp 0.4s ease-out 0.95s backwards;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .lb-hero * { animation: none !important; }
   }
@@ -691,6 +772,69 @@ const normalRows = card.rows.slice(0, -1);
     input.addEventListener('blur', () => {
       // Let a suggestion mousedown win before closing.
       setTimeout(hide, 120);
+    });
+  }
+
+  // ---- popular-driver tabs: hover/click swaps the ticket with animation ----
+  const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('.lb-tab'));
+  const rowsEl = document.getElementById('lbRows');
+  const titleEl = document.getElementById('lbTitle');
+  const metaEl = document.getElementById('lbMeta');
+  const cardEl = document.getElementById('lbCard');
+  const moreEl = document.getElementById('lbMore') as HTMLAnchorElement | null;
+
+  if (tabs.length && rowsEl && titleEl && metaEl && cardEl) {
+    const bySlug = new Map(data.map((e) => [e.s, e]));
+    let activeSlug = tabs[0]?.dataset.slug ?? '';
+
+    const circleSvg = `<svg class="lb-circle" viewBox="0 0 140 56" preserveAspectRatio="none"><path d="M 128 26 C 127 9, 98 3, 68 4 C 34 5, 8 12, 7 28 C 6 45, 38 54, 74 52 C 107 50, 133 44, 131 29 C 130 20, 121 13, 110 11" fill="none" stroke="#e8503a" stroke-width="3.4" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0"></path></svg>`;
+
+    const renderCard = (entry: Entry) => {
+      const r = entry.rows; // dearest first
+      const picks = r.length >= 3 ? [r[0], r[Math.floor(r.length / 2)], r[r.length - 1]] : r;
+      const best = picks[picks.length - 1];
+      const spread = r[0][1] - r[r.length - 1][1];
+      titleEl.textContent = entry.t;
+      metaEl.textContent = `${r.length} RETAILER${r.length === 1 ? '' : 'S'} · AUD`;
+      if (moreEl) moreEl.href = `/clubs/${entry.s}`;
+      const normal = picks
+        .slice(0, -1)
+        .map(
+          ([store, price]) =>
+            `<div class="lb-row"><span class="lb-store">${esc(store)}</span><span class="lb-price" data-odo="${price}">${fmt(price)}</span></div>`
+        )
+        .join('');
+      const tag =
+        spread > 0
+          ? `<span class="lb-tag-pos"><span class="lb-tag">SPREAD: ${fmt(spread)}</span></span>`
+          : '';
+      rowsEl.innerHTML =
+        normal +
+        `<div class="lb-row lb-row-best"><span class="lb-store lb-store-best">${esc(best[0])}</span><span class="lb-best-wrap"><span class="lb-price lb-price-best" data-odo="${best[1]}">${fmt(best[1])}</span>${circleSvg}</span>${tag}</div>`;
+      cardEl.classList.remove('lb-replay');
+      void cardEl.offsetWidth;
+      cardEl.classList.add('lb-replay');
+      runOdometer(350);
+    };
+
+    const activate = (tab: HTMLButtonElement) => {
+      const slug = tab.dataset.slug ?? '';
+      if (slug === activeSlug) return;
+      const entry = bySlug.get(slug);
+      if (!entry) return;
+      activeSlug = slug;
+      tabs.forEach((t) => {
+        const on = t === tab;
+        t.classList.toggle('active', on);
+        t.setAttribute('aria-selected', String(on));
+      });
+      renderCard(entry);
+    };
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('mouseenter', () => activate(tab));
+      tab.addEventListener('click', () => activate(tab));
+      tab.addEventListener('focus', () => activate(tab));
     });
   }
 </script>

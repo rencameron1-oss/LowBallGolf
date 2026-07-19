@@ -211,7 +211,9 @@ const daysTracked = club.days.length;
   }
 
   .club-photo {
+    position: relative;
     aspect-ratio: 1;
+    min-width: 0;
     display: grid;
     place-items: center;
     background: #fbfcf8;
@@ -220,6 +222,10 @@ const daysTracked = club.days.length;
   }
 
   .club-photo img {
+    /* Absolutely positioned so iOS Safari sizes it against the box,
+       not the image's (often huge) natural dimensions. */
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: contain;

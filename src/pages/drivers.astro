@@ -371,7 +371,9 @@ const updatedAt = new Date().toLocaleDateString('en-AU', {
 
   @media (max-width: 560px) {
     .dp-grid {
-      grid-template-columns: 1fr;
+      /* minmax(0, …) stops oversized product images from blowing the
+         track (and the whole page) out sideways on iOS Safari. */
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 
@@ -415,12 +417,17 @@ const updatedAt = new Date().toLocaleDateString('en-AU', {
   .dp-img {
     display: grid;
     place-items: center;
-    aspect-ratio: 1;
+    /* Fixed height (not aspect-ratio) so Safari resolves the image's
+       max-height against a definite box. */
+    height: 210px;
+    min-width: 0;
     margin-bottom: 12px;
   }
 
   .dp-img img,
   .dp-img svg {
+    width: auto;
+    height: auto;
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;

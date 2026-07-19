@@ -112,10 +112,12 @@ const showStoreToggle = storeNames.length > 1;
 
 <style>
   .pc {
-    border: 1px solid rgba(201, 212, 201, 0.28);
-    border-radius: 6px;
-    padding: 18px;
-    background: rgba(7, 30, 20, 0.45);
+    border: 1px solid rgba(201, 212, 201, 0.24);
+    border-radius: 8px;
+    padding: 14px 16px;
+    background: rgba(6, 23, 15, 0.72);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
   }
 
   .pc-head {
@@ -123,23 +125,25 @@ const showStoreToggle = storeNames.length > 1;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .pc-title {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.22em;
-    color: #c9d4c9;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(201, 212, 201, 0.85);
   }
 
   .pc-toggle {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.14em;
-    padding: 6px 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 5px 9px;
     background: transparent;
     color: #c9d4c9;
     border: 1px solid rgba(201, 212, 201, 0.4);
@@ -172,9 +176,9 @@ const showStoreToggle = storeNames.length > 1;
 
   .pc-ylabel,
   .pc-xlabel {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 10px;
-    fill: #c9d4c9;
+    fill: rgba(201, 212, 201, 0.8);
   }
 
   .pc-ylabel {
@@ -226,9 +230,10 @@ const showStoreToggle = storeNames.length > 1;
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 10px;
-    letter-spacing: 0.1em;
+    font-weight: 500;
+    letter-spacing: 0.06em;
     color: #c9d4c9;
   }
 
@@ -239,11 +244,11 @@ const showStoreToggle = storeNames.length > 1;
   }
 
   .pc-note {
-    margin: 12px 0 0;
-    font-family: 'IBM Plex Mono', monospace;
+    margin: 10px 0 0;
+    font-family: 'Inter', system-ui, sans-serif;
     font-size: 11px;
-    letter-spacing: 0.06em;
-    color: rgba(201, 212, 201, 0.75);
+    letter-spacing: 0.01em;
+    color: rgba(201, 212, 201, 0.7);
   }
 </style>
 

@@ -26,10 +26,17 @@ const daysTracked = club.days.length;
   description={`${club.title} prices across ${club.offers.length} Australian golf retailers. Best price ${dollars(best.price)} at ${best.name}. Price history and spread tracked nightly.`}
   ogImage={club.image ?? undefined}
 >
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400..700&display=swap"
+    rel="stylesheet"
+  />
+
   <div class="club-page">
     <Container>
       <nav class="club-crumb" aria-label="Breadcrumb">
-        <a href="/drivers">← ALL DRIVERS</a>
+        <a href="/drivers">← All drivers</a>
       </nav>
 
       <section class="club-top">
@@ -54,7 +61,7 @@ const daysTracked = club.days.length;
 
           <div class="club-ctas">
             <a class="club-cta-buy" href={best.url} rel="nofollow sponsored" target="_blank">
-              GO TO CHEAPEST STORE →
+              Go to cheapest store →
             </a>
             <form
               class="club-alert"
@@ -74,22 +81,23 @@ const daysTracked = club.days.length;
                 type="email"
                 name="email"
                 required
-                placeholder="EMAIL FOR PRICE ALERTS"
+                placeholder="Email for price alerts"
                 aria-label={`Email address for ${club.title} price alerts`}
               />
-              <button type="submit">⚡ ALERT ME</button>
+              <button type="submit">Alert me</button>
               <p class="club-alert-status" data-alert-status role="status" aria-live="polite"></p>
             </form>
           </div>
         </div>
       </section>
 
+      <div class="club-mid">
       <section class="club-chart">
         <PriceChart days={club.days} storeNames={club.storeNames} trackedSince={club.trackedSince} />
       </section>
 
       <section class="club-stores">
-        <h2>WHERE TO BUY</h2>
+        <h2>Where to buy</h2>
         <div class="club-table-wrap">
           <table>
             <thead>
@@ -112,20 +120,21 @@ const daysTracked = club.days.length;
                     )}
                   </td>
                   <td class="num rrp">{offer.rrp ? dollars(offer.rrp) : '—'}</td>
-                  <td class="stock">{offer.inStock ? 'IN STOCK' : 'OUT OF STOCK'}</td>
-                  <td class="go"><a href={offer.url} rel="nofollow sponsored" target="_blank">VISIT →</a></td>
+                  <td class="stock">{offer.inStock ? 'In stock' : 'Out of stock'}</td>
+                  <td class="go"><a href={offer.url} rel="nofollow sponsored" target="_blank">Visit →</a></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </section>
+      </div>
 
       <section class="club-stats">
-        <div><span class="stat-label">LOWEST SEEN</span><span class="stat-val">{dollars(club.minEver)}</span></div>
-        <div><span class="stat-label">HIGHEST SEEN</span><span class="stat-val">{dollars(club.maxEver)}</span></div>
-        <div><span class="stat-label">SPREAD TODAY</span><span class="stat-val spread">{spread > 0 ? dollars(spread) : '—'}</span></div>
-        <div><span class="stat-label">DAYS TRACKED</span><span class="stat-val">{daysTracked}</span></div>
+        <div><span class="stat-label">Lowest seen</span><span class="stat-val">{dollars(club.minEver)}</span></div>
+        <div><span class="stat-label">Highest seen</span><span class="stat-val">{dollars(club.maxEver)}</span></div>
+        <div><span class="stat-label">Spread today</span><span class="stat-val spread">{spread > 0 ? dollars(spread) : '—'}</span></div>
+        <div><span class="stat-label">Days tracked</span><span class="stat-val">{daysTracked}</span></div>
       </section>
 
       <p class="club-disclaimer">
@@ -138,20 +147,33 @@ const daysTracked = club.days.length;
 
 <style>
   .club-page {
-    background: radial-gradient(120% 90% at 50% 10%, #0d3527 0%, #092619 70%);
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', system-ui, sans-serif;
+    background:
+      linear-gradient(rgba(6, 23, 15, 0.9), rgba(6, 23, 15, 0.94)),
+      url('/images/club-bg.jpg') center / cover no-repeat #071a11;
     color: #f2f4ef;
     padding: 34px 0 90px;
+    font-family: var(--sans);
+  }
+
+  @media (min-width: 768px) {
+    .club-page {
+      background-attachment: fixed;
+    }
   }
 
   .club-crumb {
-    margin-bottom: 30px;
+    margin-bottom: 28px;
   }
 
   .club-crumb a {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--sans);
     font-size: 12px;
-    letter-spacing: 0.18em;
-    color: #c9d4c9;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(201, 212, 201, 0.8);
     text-decoration: none;
   }
 
@@ -161,16 +183,30 @@ const daysTracked = club.days.length;
 
   .club-top {
     display: grid;
-    grid-template-columns: minmax(220px, 340px) 1fr;
+    grid-template-columns: minmax(200px, 300px) 1fr;
     gap: 44px;
     align-items: center;
-    margin-bottom: 44px;
+    margin-bottom: 36px;
   }
 
   @media (max-width: 760px) {
     .club-top {
       grid-template-columns: 1fr;
       gap: 26px;
+    }
+  }
+
+  .club-mid {
+    display: grid;
+    grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
+    gap: 18px;
+    align-items: start;
+    margin-bottom: 8px;
+  }
+
+  @media (max-width: 1000px) {
+    .club-mid {
+      grid-template-columns: 1fr;
     }
   }
 
@@ -196,22 +232,23 @@ const daysTracked = club.days.length;
   }
 
   .club-kicker {
-    margin: 0 0 10px;
-    font-family: 'IBM Plex Mono', monospace;
+    margin: 0 0 12px;
+    font-family: var(--sans);
     font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.24em;
-    color: #c9d4c9;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    color: rgba(201, 212, 201, 0.85);
   }
 
   .club-title {
     margin: 0;
-    font-family: 'Archivo', sans-serif;
-    font-weight: 900;
-    font-stretch: 72%;
-    font-size: clamp(34px, 5vw, 58px);
-    line-height: 0.98;
-    color: #f2f4ef;
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-weight: 560;
+    font-size: clamp(32px, 4.6vw, 54px);
+    line-height: 1.04;
+    letter-spacing: 0.005em;
+    color: #f7f8f4;
   }
 
   .club-best {
@@ -223,17 +260,18 @@ const daysTracked = club.days.length;
   }
 
   .club-best-price {
-    font-family: 'IBM Plex Mono', monospace;
-    font-variant-numeric: tabular-nums;
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-variant-numeric: lining-nums;
     font-weight: 600;
-    font-size: clamp(30px, 4vw, 44px);
+    font-size: clamp(30px, 4vw, 46px);
     color: #f5c944;
   }
 
   .club-best-at {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--sans);
     font-size: 14px;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.01em;
     color: #c9d4c9;
   }
 
@@ -251,11 +289,10 @@ const daysTracked = club.days.length;
     background: #f5c944;
     color: #0d3527;
     text-decoration: none;
-    font-family: 'Archivo', sans-serif;
-    font-weight: 900;
-    font-stretch: 80%;
-    font-size: 15px;
-    letter-spacing: 0.08em;
+    font-family: var(--sans);
+    font-weight: 650;
+    font-size: 14px;
+    letter-spacing: 0.02em;
     border-radius: 4px;
     transition: all 0.15s ease;
   }
@@ -283,9 +320,9 @@ const daysTracked = club.days.length;
     border: 0;
     outline: 0;
     color: #f2f4ef;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 0.06em;
+    font-family: var(--sans);
+    font-size: 13px;
+    letter-spacing: 0.01em;
   }
 
   .club-alert input[type='email']::placeholder {
@@ -298,11 +335,10 @@ const daysTracked = club.days.length;
     border: 0;
     border-left: 1px solid rgba(245, 201, 68, 0.55);
     color: #f5c944;
-    font-family: 'Archivo', sans-serif;
-    font-weight: 800;
-    font-stretch: 80%;
+    font-family: var(--sans);
+    font-weight: 650;
     font-size: 13px;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.02em;
     cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease;
   }
@@ -326,9 +362,9 @@ const daysTracked = club.days.length;
     left: 0;
     top: 100%;
     margin: 6px 0 0;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.06em;
+    font-family: var(--sans);
+    font-size: 12px;
+    letter-spacing: 0.01em;
     white-space: nowrap;
   }
 
@@ -340,48 +376,47 @@ const daysTracked = club.days.length;
     color: #e8503a;
   }
 
-  .club-chart {
-    margin-bottom: 44px;
-  }
-
   .club-stores h2 {
-    margin: 0 0 16px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
+    margin: 0 0 12px;
+    font-family: var(--sans);
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.26em;
-    color: #c9d4c9;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(201, 212, 201, 0.85);
   }
 
   .club-table-wrap {
     overflow-x: auto;
-    border: 1px solid rgba(201, 212, 201, 0.28);
-    border-radius: 6px;
-    background: rgba(7, 30, 20, 0.45);
+    border: 1px solid rgba(201, 212, 201, 0.24);
+    border-radius: 8px;
+    background: rgba(6, 23, 15, 0.72);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
   }
 
   .club-stores table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
   }
 
   .club-stores th,
   .club-stores td {
-    padding: 13px 18px;
+    padding: 11px 14px;
     text-align: left;
     white-space: nowrap;
-    border-top: 1px dashed rgba(201, 212, 201, 0.25);
+    border-top: 1px solid rgba(201, 212, 201, 0.14);
   }
 
   .club-stores thead th {
     border-top: 0;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--sans);
     font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: rgba(201, 212, 201, 0.7);
+    color: rgba(201, 212, 201, 0.6);
   }
 
   .club-stores .num {
@@ -389,28 +424,30 @@ const daysTracked = club.days.length;
   }
 
   .club-stores .store {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    letter-spacing: 0.08em;
+    font-family: var(--sans);
+    font-weight: 550;
+    font-size: 12.5px;
+    letter-spacing: 0.06em;
     color: #c9d4c9;
   }
 
   .club-stores .price {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--sans);
     font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    font-size: 17px;
+    font-weight: 650;
+    font-size: 15px;
   }
 
   .club-stores .rrp {
-    font-family: 'IBM Plex Mono', monospace;
-    color: rgba(201, 212, 201, 0.7);
+    font-family: var(--sans);
+    font-variant-numeric: tabular-nums;
+    color: rgba(201, 212, 201, 0.65);
   }
 
   .club-stores .stock {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.1em;
+    font-family: var(--sans);
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
     color: #7fd1ae;
   }
 
@@ -441,9 +478,10 @@ const daysTracked = club.days.length;
   }
 
   .club-stores .go a {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--sans);
+    font-weight: 600;
     font-size: 12px;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.02em;
     color: #f5c944;
     text-decoration: none;
   }
@@ -456,33 +494,37 @@ const daysTracked = club.days.length;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 14px;
-    margin: 40px 0 26px;
+    margin: 26px 0 24px;
   }
 
   .club-stats > div {
-    border: 1px solid rgba(201, 212, 201, 0.28);
-    border-radius: 6px;
-    padding: 16px 18px;
-    background: rgba(7, 30, 20, 0.45);
+    border: 1px solid rgba(201, 212, 201, 0.24);
+    border-radius: 8px;
+    padding: 15px 18px;
+    background: rgba(6, 23, 15, 0.72);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
   }
 
   .stat-label {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--sans);
     font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.22em;
-    color: rgba(201, 212, 201, 0.7);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(201, 212, 201, 0.6);
   }
 
   .stat-val {
-    font-family: 'IBM Plex Mono', monospace;
-    font-variant-numeric: tabular-nums;
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-variant-numeric: lining-nums;
     font-weight: 600;
-    font-size: 22px;
-    color: #f2f4ef;
+    font-size: 24px;
+    color: #f7f8f4;
   }
 
   .stat-val.spread {
@@ -491,9 +533,9 @@ const daysTracked = club.days.length;
 
   .club-disclaimer {
     margin: 0;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.04em;
+    font-family: var(--sans);
+    font-size: 12px;
+    letter-spacing: 0.01em;
     line-height: 1.7;
     color: rgba(201, 212, 201, 0.6);
   }
@@ -508,7 +550,7 @@ const daysTracked = club.days.length;
       event.preventDefault();
       const body = new URLSearchParams(new FormData(form) as unknown as Record<string, string>).toString();
       status.dataset.state = '';
-      status.textContent = 'SAVING…';
+      status.textContent = 'Saving…';
       try {
         const res = await fetch('/', {
           method: 'POST',
@@ -517,11 +559,11 @@ const daysTracked = club.days.length;
         });
         if (!res.ok) throw new Error();
         status.dataset.state = 'ok';
-        status.textContent = "YOU'RE ON THE LIST — WE'LL EMAIL YOU ON A DROP.";
+        status.textContent = "You're on the list — we'll email you when it drops.";
         form.reset();
       } catch {
         status.dataset.state = 'error';
-        status.textContent = 'COULD NOT SAVE — PLEASE TRY AGAIN.';
+        status.textContent = 'Could not save — please try again.';
       }
     });
   }

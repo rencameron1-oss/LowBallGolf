@@ -226,14 +226,6 @@ const drawerBrowse = [
     border-bottom: 0;
   }
 
-  .header-overlay:not(.header-scrolled) :is(a, button, span, svg, nav a) {
-    color: #f2f4ef;
-  }
-
-  .header-overlay:not(.header-scrolled) nav a:hover {
-    color: #f5c944;
-  }
-
   .header-dropdown-dark {
     border: 1px solid var(--color-brand-dark-border);
     background: rgba(var(--color-brand-dark-surface-rgb), 0.96);
@@ -396,6 +388,22 @@ const drawerBrowse = [
     padding: 2px 5px;
     border: 1px solid currentColor;
     border-radius: 3px;
+  }
+</style>
+
+<style is:global>
+  /* Global (unscoped) so it also reaches text inside child components
+     like the BrandMark wordmark — scoped rules stop at that boundary. */
+  #site-header.header-overlay:not(.header-scrolled) :is(a, button, span, svg, nav a) {
+    color: #f2f4ef;
+  }
+
+  #site-header.header-overlay:not(.header-scrolled) nav a:hover {
+    color: #f5c944;
+  }
+
+  #site-header.header-overlay:not(.header-scrolled) .lb-brand em {
+    color: #f5c944;
   }
 </style>
 

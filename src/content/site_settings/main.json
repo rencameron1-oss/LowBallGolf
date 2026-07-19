@@ -2,7 +2,7 @@
   "title": "Site Settings",
   "location": "Melbourne, Australia",
   "contact_intro": "Use this page for enquiries about LowballGolf.",
-  "footer_note": "LowballGolf. Built with Astro, TinaCMS, GitHub and Netlify.",
+  "footer_note": "LowballGolf — independent golf equipment price comparison for Australia.",
   "brand": {
     "color_scheme": "editorial",
     "logo_mode": "text",

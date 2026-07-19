@@ -35,6 +35,8 @@ export default defineConfig({
   redirects: {
     '/home': '/',
     '/admin': '/admin/index.html',
-    '/contact-us': '/contact'
+    '/contact-us': '/contact',
+    '/writing': '/guides',
+    '/work': '/drivers'
   },
 });

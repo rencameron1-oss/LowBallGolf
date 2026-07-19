@@ -150,7 +150,7 @@ const posts = defineCollection({
     author: z.string().default('Site Owner'),
     excerpt: z.string(),
     hero_image: z.string().optional(),
-    category: z.enum(['strategy', 'delivery', 'leadership', 'ai', 'creative']).default('strategy'),
+    category: z.enum(['guides', 'deals', 'reviews', 'news']).default('guides'),
     tags: z.array(z.string()).default([]),
     featured: z.boolean().default(false),
     order: z.number().default(0),

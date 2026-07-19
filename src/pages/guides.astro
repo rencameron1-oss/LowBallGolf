@@ -9,7 +9,7 @@ import FeaturedPost from '../components/posts/FeaturedPost.astro';
 import TinaVisualEditing from '../components/tina/TinaVisualEditing.astro';
 import { getCollection, render } from 'astro:content';
 
-const page = (await getCollection('pages')).find((entry) => entry.id === 'writing');
+const page = (await getCollection('pages')).find((entry) => entry.id === 'guides');
 const Content = page ? (await render(page)).Content : null;
 const pageHeroSlider = page?.data.hero_slider;
 const pageHeroSlides = pageHeroSlider?.slides ?? [];
@@ -23,17 +23,17 @@ const regularPosts = featuredPost ? posts.filter((entry) => entry.id !== feature
 ---
 
 <PageLayout
-  title={page?.data.seo_title || page?.data.title || 'Writing'}
+  title={page?.data.seo_title || page?.data.title || 'Guides'}
   description={page?.data.seo_description}
   ogImage={pageOgImage}
 >
-  <TinaVisualEditing collection="page" relativePath="writing.md" />
+  <TinaVisualEditing collection="page" relativePath="guides.md" />
 
   {pageHeroSlides.length > 0 ? (
     <HeroSliderBlock {...pageHeroSlider} topOfPage={true} />
   ) : (
     <HeroSection
-      heading={page?.data.hero_heading || 'Writing and Ideas'}
+      heading={page?.data.hero_heading || 'Guides'}
       subheading={page?.data.hero_subheading}
       image={page?.data.hero_image}
     />
@@ -66,7 +66,7 @@ const regularPosts = featuredPost ? posts.filter((entry) => entry.id !== feature
           <PostGrid posts={regularPosts} columns={3} />
         </div>
       ) : (
-        <p class="text-brand-muted text-center py-8">No writing published yet.</p>
+        <p class="text-brand-muted text-center py-8">No guides published yet.</p>
       )}
     </Container>
   </section>

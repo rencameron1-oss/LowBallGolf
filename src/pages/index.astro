@@ -17,6 +17,7 @@ const homeHeroImage =
   title={homeEntry?.data.seo_title || 'Home'}
   description={homeEntry?.data.seo_description || siteConfig.description}
   ogImage={homeHeroImage}
+  overlay={true}
 >
   <TinaVisualEditing collection="home" relativePath="index.md" />
   <LowballHero />

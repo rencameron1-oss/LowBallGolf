@@ -6,9 +6,11 @@ import BrandMark from './BrandMark.astro';
 
 interface Props {
   theme?: 'light' | 'dark';
+  /** Transparent over the page hero; solid bar appears after scrolling past it. */
+  overlay?: boolean;
 }
 
-const { theme = 'light' } = Astro.props;
+const { theme = 'light', overlay = false } = Astro.props;
 const isDark = theme === 'dark';
 
 // Read navigation from CMS-managed JSON, fall back to static config
@@ -20,17 +22,35 @@ try {
   const { mainNav: staticNav } = await import('../../config/navigation');
   mainNav = staticNav;
 }
+
+// The slide-out drawer: browse destinations first, then the site pages.
+const drawerBrowse = [
+  { label: 'Clubs', href: '/drivers' },
+  { label: 'Biggest Price Drop', href: '/drivers' },
+  { label: 'Merch', soon: true },
+  { label: 'Reviews', soon: true },
+];
 ---
 
 <header
   id="site-header"
   data-theme={theme}
-  class="site-header-shell fixed top-0 left-0 right-0 z-50 transition-all duration-500 header-transparent"
+  data-overlay={overlay ? 'true' : undefined}
+  class:list={[
+    'site-header-shell fixed top-0 left-0 right-0 z-50 transition-all duration-500 header-transparent',
+    overlay && 'header-overlay',
+  ]}
 >
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-18 md:h-20">
-      <!-- Logo -->
-      <a href="/" class="flex items-center gap-3 group">
+      <!-- Brand: opens the browse drawer -->
+      <button
+        id="drawer-btn"
+        class="flex items-center gap-2 group cursor-pointer"
+        aria-controls="side-drawer"
+        aria-expanded="false"
+        aria-label="Open menu"
+      >
         <BrandMark
           theme={theme}
           size="header"
@@ -39,7 +59,13 @@ try {
             isDark ? 'text-white' : 'text-brand-text',
           ]}
         />
-      </a>
+        <svg
+          class:list={['w-4 h-4 opacity-60 transition-transform duration-300 group-hover:translate-y-[1px]', isDark ? 'text-white' : 'text-brand-text']}
+          fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
 
       <!-- Desktop Nav -->
       <nav class="hidden lg:flex items-center gap-6 xl:gap-8" aria-label="Main navigation">
@@ -90,73 +116,64 @@ try {
         </Button>
       </nav>
 
-      <!-- Mobile Menu Button -->
+      <!-- Mobile: hamburger opens the same drawer -->
       <button
-        id="mobile-menu-btn"
+        id="drawer-btn-mobile"
         class:list={[
           'lg:hidden relative z-50 flex min-h-11 min-w-11 items-center justify-center rounded-full p-2',
           isDark ? 'text-white' : 'text-brand-text',
         ]}
-        aria-label="Toggle menu"
+        aria-controls="side-drawer"
         aria-expanded="false"
+        aria-label="Open menu"
       >
         <div class="w-6 h-5 relative flex flex-col justify-between">
-          <span class="hamburger-line block h-0.5 w-6 bg-current transform transition-all duration-300 origin-center"></span>
-          <span class="hamburger-line block h-0.5 w-6 bg-current transition-all duration-300"></span>
-          <span class="hamburger-line block h-0.5 w-4 bg-current transform transition-all duration-300 origin-center ml-auto"></span>
+          <span class="block h-0.5 w-6 bg-current"></span>
+          <span class="block h-0.5 w-6 bg-current"></span>
+          <span class="block h-0.5 w-4 bg-current ml-auto"></span>
         </div>
       </button>
     </div>
   </div>
-
 </header>
 
-<!-- Mobile Menu - Full screen overlay -->
-<div
-  id="mobile-menu"
-  class:list={[
-    'site-mobile-menu fixed inset-0 z-40 flex overflow-y-auto opacity-0 invisible transition-all duration-500',
-    isDark ? 'header-mobile-dark' : 'bg-brand-primary/98',
-  ]}
->
-  <nav class="site-mobile-menu__nav text-center space-y-6" aria-label="Mobile navigation">
-    {mainNav.map((item) => (
-      <div>
-        <a
-          href={item.href}
-          class:list={[
-            'block text-2xl font-heading font-semibold transition-colors',
-            isDark ? 'text-white hover:text-[#b7beca]' : 'text-brand-text hover:text-brand-accent',
-          ]}
-        >
-          {item.label}
-        </a>
-        {item.children && (
-          <div class="mt-2 space-y-1">
-            {item.children.map((child) => (
-              <a
-                href={child.href}
-                class:list={[
-                  'block text-base transition-colors',
-                  isDark ? 'text-white/68 hover:text-white' : 'text-brand-muted hover:text-brand-text',
-                ]}
-              >
-                {child.label}
-              </a>
-            ))}
-          </div>
-        )}
-      </div>
-    ))}
-    <div class="pt-4">
-      <Button href={siteConfig.booking.ctaUrl} size="lg" class={isDark ? 'header-cta-dark' : ''}>
-        {siteConfig.booking.ctaText}
-      </Button>
-    </div>
-  </nav>
-</div>
+<!-- Off-canvas drawer -->
+<div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
+<aside id="side-drawer" class="side-drawer" aria-label="Browse LowballGolf" aria-hidden="true">
+  <div class="side-drawer__head">
+    <span class="side-drawer__brand">LOWBALL<span>G</span>OLF</span>
+    <button id="drawer-close" class="side-drawer__close" aria-label="Close menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <path d="M6 6l12 12M18 6L6 18" />
+      </svg>
+    </button>
+  </div>
 
-<!-- Spacer to account for fixed header -->
+  <nav class="side-drawer__section" aria-label="Browse">
+    <p class="side-drawer__label">Browse</p>
+    {drawerBrowse.map((item) =>
+      item.soon ? (
+        <span class="side-drawer__link side-drawer__link--soon">
+          {item.label} <em>SOON</em>
+        </span>
+      ) : (
+        <a class="side-drawer__link" href={item.href}>{item.label}</a>
+      )
+    )}
+  </nav>
+
+  <nav class="side-drawer__section" aria-label="Pages">
+    <p class="side-drawer__label">Site</p>
+    <a class="side-drawer__link side-drawer__link--small" href="/">Home</a>
+    {mainNav
+      .filter((i) => i.href !== '/')
+      .map((item) => (
+        <a class="side-drawer__link side-drawer__link--small" href={item.href}>{item.label}</a>
+      ))}
+  </nav>
+</aside>
+
+<!-- Spacer to account for fixed header (cancelled by overlay heroes) -->
 <div class="site-header-spacer"></div>
 
 <style>
@@ -166,22 +183,6 @@ try {
 
   .site-header-spacer {
     height: calc(4.5rem + max(env(safe-area-inset-top), 0.7rem));
-  }
-
-  .site-mobile-menu {
-    align-items: flex-start;
-    justify-content: center;
-    padding:
-      calc(max(env(safe-area-inset-top), 0.7rem) + 4.75rem)
-      1.25rem
-      max(1.5rem, env(safe-area-inset-bottom));
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .site-mobile-menu__nav {
-    width: min(100%, 22rem);
-    margin: 0 auto;
-    padding-bottom: 1rem;
   }
 
   .header-transparent {
@@ -209,14 +210,27 @@ try {
     border-bottom: 1px solid var(--color-brand-dark-border);
   }
 
+  /* Overlay mode: nothing but the wordmark floats on the hero until the
+     visitor scrolls past it, then the solid bar fades in. */
+  .header-overlay:not(.header-scrolled) {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 0;
+  }
+
+  .header-overlay:not(.header-scrolled) :is(a, button, span, svg, nav a) {
+    color: #f2f4ef;
+  }
+
+  .header-overlay:not(.header-scrolled) nav a:hover {
+    color: #f5c944;
+  }
+
   .header-dropdown-dark {
     border: 1px solid var(--color-brand-dark-border);
     background: rgba(var(--color-brand-dark-surface-rgb), 0.96);
     box-shadow: 0 20px 45px rgba(0, 0, 0, 0.34);
-  }
-
-  .header-mobile-dark {
-    background: rgb(var(--color-brand-dark-surface-rgb));
   }
 
   .header-cta-dark {
@@ -238,24 +252,154 @@ try {
     }
   }
 
-  /* Hamburger animation */
-  [aria-expanded="true"] .hamburger-line:nth-child(1) {
-    transform: rotate(45deg) translate(5px, 5px);
-  }
-  [aria-expanded="true"] .hamburger-line:nth-child(2) {
+  /* ---------- off-canvas drawer ---------- */
+  .drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(5, 20, 13, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     opacity: 0;
+    transition: opacity 0.3s ease;
   }
-  [aria-expanded="true"] .hamburger-line:nth-child(3) {
-    width: 1.5rem;
-    transform: rotate(-45deg) translate(5px, -5px);
+
+  .drawer-backdrop.open {
+    opacity: 1;
+  }
+
+  .side-drawer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 70;
+    width: min(320px, 86vw);
+    padding: 26px 30px 40px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    background: #092619;
+    color: #f2f4ef;
+    transform: translateX(-102%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0.35, 1);
+    box-shadow: 24px 0 60px rgba(0, 0, 0, 0.35);
+  }
+
+  .side-drawer.open {
+    transform: translateX(0);
+  }
+
+  .side-drawer__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+  }
+
+  .side-drawer__brand {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900;
+    font-stretch: 72%;
+    font-size: 22px;
+    letter-spacing: 0.01em;
+    color: #f5c944;
+  }
+
+  .side-drawer__brand span {
+    color: #f2f4ef;
+  }
+
+  .side-drawer__close {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    background: none;
+    border: 1px solid rgba(201, 212, 201, 0.3);
+    border-radius: 6px;
+    color: #c9d4c9;
+    cursor: pointer;
+  }
+
+  .side-drawer__close:hover {
+    color: #f5c944;
+    border-color: #f5c944;
+  }
+
+  .side-drawer__close svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .side-drawer__section {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 26px;
+  }
+
+  .side-drawer__label {
+    margin: 0 0 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(201, 212, 201, 0.55);
+  }
+
+  .side-drawer__link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800;
+    font-stretch: 80%;
+    font-size: 21px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #f2f4ef;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(201, 212, 201, 0.18);
+    transition: color 0.15s ease, padding-left 0.15s ease;
+  }
+
+  a.side-drawer__link:hover {
+    color: #f5c944;
+    padding-left: 6px;
+  }
+
+  .side-drawer__link--small {
+    font-size: 15px;
+    font-weight: 600;
+    padding: 8px 0;
+  }
+
+  .side-drawer__link--soon {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .side-drawer__link--soon em {
+    font-style: normal;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    padding: 2px 5px;
+    border: 1px solid currentColor;
+    border-radius: 3px;
   }
 </style>
 
 <script>
-  // Scroll-based header background
+  // Scroll-based header background. Overlay pages wait until the visitor
+  // has scrolled past (most of) the hero before showing the solid bar.
   const header = document.getElementById('site-header');
+  const isOverlay = header?.dataset.overlay === 'true';
+  const threshold = () => (isOverlay ? Math.max(window.innerHeight - 120, 200) : 60);
   const handleScroll = () => {
-    if (window.scrollY > 60) {
+    if (window.scrollY > threshold()) {
       header?.classList.remove('header-transparent');
       header?.classList.add('header-scrolled');
     } else {
@@ -266,30 +410,37 @@ try {
   window.addEventListener('scroll', handleScroll, { passive: true });
   handleScroll();
 
-  // Mobile menu toggle
-  const btn = document.getElementById('mobile-menu-btn');
-  const menu = document.getElementById('mobile-menu');
-  btn?.addEventListener('click', () => {
-    const expanded = btn.getAttribute('aria-expanded') === 'true';
-    btn.setAttribute('aria-expanded', String(!expanded));
-    if (!expanded) {
-      menu?.classList.remove('opacity-0', 'invisible');
-      menu?.classList.add('opacity-100', 'visible');
-      document.body.style.overflow = 'hidden';
-    } else {
-      menu?.classList.add('opacity-0', 'invisible');
-      menu?.classList.remove('opacity-100', 'visible');
-      document.body.style.overflow = '';
-    }
-  });
+  // Off-canvas drawer
+  const drawer = document.getElementById('side-drawer');
+  const backdrop = document.getElementById('drawer-backdrop');
+  const triggers = [
+    document.getElementById('drawer-btn'),
+    document.getElementById('drawer-btn-mobile'),
+  ].filter(Boolean) as HTMLElement[];
 
-  // Close mobile menu on link click
-  menu?.querySelectorAll('a').forEach((link) => {
-    link.addEventListener('click', () => {
-      btn?.setAttribute('aria-expanded', 'false');
-      menu?.classList.add('opacity-0', 'invisible');
-      menu?.classList.remove('opacity-100', 'visible');
-      document.body.style.overflow = '';
-    });
+  const setOpen = (open: boolean) => {
+    drawer?.classList.toggle('open', open);
+    drawer?.setAttribute('aria-hidden', String(!open));
+    triggers.forEach((t) => t.setAttribute('aria-expanded', String(open)));
+    if (backdrop) {
+      if (open) {
+        backdrop.hidden = false;
+        requestAnimationFrame(() => backdrop.classList.add('open'));
+      } else {
+        backdrop.classList.remove('open');
+        setTimeout(() => (backdrop.hidden = true), 300);
+      }
+    }
+    document.body.style.overflow = open ? 'hidden' : '';
+  };
+
+  triggers.forEach((t) =>
+    t.addEventListener('click', () => setOpen(!drawer?.classList.contains('open')))
+  );
+  document.getElementById('drawer-close')?.addEventListener('click', () => setOpen(false));
+  backdrop?.addEventListener('click', () => setOpen(false));
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') setOpen(false);
   });
+  drawer?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
 </script>

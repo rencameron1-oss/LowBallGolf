@@ -9,13 +9,16 @@ interface Props {
   ogImage?: string;
   bodyClass?: string;
   theme?: 'light' | 'dark';
+  /** Float the header transparently over the page's own hero; the solid
+   *  bar appears once the visitor scrolls past it. */
+  overlay?: boolean;
 }
 
-const { title, description, ogImage, bodyClass, theme = 'light' } = Astro.props;
+const { title, description, ogImage, bodyClass, theme = 'light', overlay = false } = Astro.props;
 ---
 
 <BaseLayout title={title} description={description} ogImage={ogImage} bodyClass={bodyClass}>
-  <Header theme={theme} />
+  <Header theme={theme} overlay={overlay} />
   <main>
     <slot />
   </main>

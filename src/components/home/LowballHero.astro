@@ -143,30 +143,29 @@ const normalRows = card.rows.slice(0, -1);
     </span><span class="lb-word" style="animation-delay:1.05s">LF</span>
   </h1>
 
+  {searchIndex.length > 0 && (
+    <div class="lb-searchbar">
+      <svg class="lb-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="m20 20-3.5-3.5" stroke-linecap="round"></path>
+      </svg>
+      <input
+        id="lbSearch"
+        class="lb-search"
+        type="text"
+        placeholder={`SEARCH ${searchIndex.length} TRACKED CLUBS — TRY "PING G440K"`}
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="Search a club to compare prices"
+      />
+      <div class="lb-sug" id="lbSug" hidden></div>
+    </div>
+  )}
+
   <div class="lb-card" id="lbCard">
     <div class="lb-card-head">
-      {searchIndex.length > 0 ? (
-        <>
-          <svg class="lb-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
-            <circle cx="11" cy="11" r="7"></circle>
-            <path d="m20 20-3.5-3.5" stroke-linecap="round"></path>
-          </svg>
-          <input
-            id="lbSearch"
-            class="lb-search"
-            type="text"
-            value={card.title}
-            placeholder="SEARCH ANY CLUB…"
-            autocomplete="off"
-            spellcheck="false"
-            aria-label="Search a club to compare prices"
-          />
-        </>
-      ) : (
-        <span class="lb-card-title">{card.title}</span>
-      )}
+      <span class="lb-card-title" id="lbTitle">{card.title}</span>
       <span class="lb-card-meta" id="lbMeta">{card.meta}</span>
-      <div class="lb-sug" id="lbSug" hidden></div>
     </div>
     <div id="lbRows">
       {normalRows.map((row) => (
@@ -198,13 +197,6 @@ const normalRows = card.rows.slice(0, -1);
   <div class="lb-cta-wrap">
     <a href="/drivers" class="lb-cta">START COMPARING</a>
   </div>
-
-  <nav class="lb-rail" aria-label="Browse LowballGolf">
-    <a href="/drivers">CLUBS</a>
-    <a class="lb-rail-soon" role="link" aria-disabled="true">MERCH <span>SOON</span></a>
-    <a class="lb-rail-soon" role="link" aria-disabled="true">REVIEWS <span>SOON</span></a>
-    <a href="/drivers">BIGGEST PRICE DROP</a>
-  </nav>
 </div>
 
 <script type="application/json" id="lb-data" set:html={JSON.stringify(searchIndex).replace(/</g, '\\u003c')} />
@@ -328,24 +320,51 @@ const normalRows = card.rows.slice(0, -1);
   .lb-card {
     animation: om-cardin 0.45s ease-out 1.1s backwards;
     width: min(560px, 92vw);
-    margin-top: 44px;
+    margin-top: 26px;
     border: 1px solid rgba(201, 212, 201, 0.28);
     border-radius: 6px;
     text-align: left;
+    background: rgba(7, 30, 20, 0.45);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 
   .lb-card-head {
-    position: relative;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: baseline;
     gap: 12px;
     padding: 14px 18px;
   }
 
+  /* Standalone search bar between wordmark and card */
+  .lb-searchbar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: min(560px, 92vw);
+    margin-top: 40px;
+    padding: 15px 18px;
+    box-sizing: border-box;
+    text-align: left;
+    background: rgba(7, 30, 20, 0.72);
+    border: 1px solid rgba(245, 201, 68, 0.55);
+    border-radius: 6px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: om-fadeup 0.5s ease-out 1s backwards;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .lb-searchbar:focus-within {
+    border-color: #f5c944;
+    box-shadow: 0 0 0 3px rgba(245, 201, 68, 0.22), 0 14px 30px rgba(0, 0, 0, 0.35);
+  }
+
   .lb-search-icon {
-    width: 16px;
-    height: 16px;
+    width: 17px;
+    height: 17px;
     flex-shrink: 0;
     color: #f5c944;
   }
@@ -356,30 +375,28 @@ const normalRows = card.rows.slice(0, -1);
     background: transparent;
     border: 0;
     outline: 0;
-    color: inherit;
-    font-family: 'Archivo', sans-serif;
-    font-weight: 800;
-    font-stretch: 80%;
-    font-size: 17px;
+    color: #f2f4ef;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    font-size: 14px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     padding: 0;
   }
 
   .lb-search::placeholder {
-    color: rgba(242, 244, 239, 0.4);
-    font-weight: 700;
+    color: rgba(201, 212, 201, 0.6);
   }
 
   .lb-sug {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 6px);
     left: -1px;
     right: -1px;
     z-index: 6;
     background: #0c3123;
     border: 1px solid rgba(201, 212, 201, 0.28);
-    border-radius: 0 0 6px 6px;
+    border-radius: 6px;
     overflow: hidden;
     box-shadow: 0 18px 34px rgba(0, 0, 0, 0.4);
   }
@@ -544,70 +561,6 @@ const normalRows = card.rows.slice(0, -1);
     transform: translateY(-2px);
   }
 
-  /* Right-hand browse rail */
-  .lb-rail {
-    position: absolute;
-    right: 28px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 22px;
-    animation: om-fadeup 0.5s ease-out 3.7s backwards;
-  }
-
-  .lb-rail a {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding-right: 14px;
-    border-right: 2px solid rgba(245, 201, 68, 0.55);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 0.22em;
-    line-height: 1;
-    color: #c9d4c9;
-    text-decoration: none;
-    transition: color 0.15s ease, border-color 0.15s ease;
-  }
-
-  .lb-rail a:hover {
-    color: #f5c944;
-    border-right-color: #f5c944;
-  }
-
-  .lb-rail-soon {
-    opacity: 0.5;
-    pointer-events: none;
-  }
-
-  .lb-rail-soon span {
-    font-size: 9px;
-    letter-spacing: 0.12em;
-    padding: 2px 5px;
-    border: 1px solid currentColor;
-    border-radius: 3px;
-  }
-
-  @media (max-width: 1100px) {
-    .lb-rail {
-      position: static;
-      transform: none;
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-      gap: 14px 20px;
-      margin-top: 36px;
-    }
-
-    .lb-rail a {
-      border-right: 0;
-      padding-right: 0;
-    }
-  }
-
   /* Compressed animation timeline when a search swaps the card */
   .lb-card.lb-replay {
     animation: om-cardin 0.3s ease-out backwards;
@@ -679,15 +632,17 @@ const normalRows = card.rows.slice(0, -1);
   const sug = document.getElementById('lbSug');
   const rowsEl = document.getElementById('lbRows');
   const metaEl = document.getElementById('lbMeta');
+  const titleEl = document.getElementById('lbTitle');
   const cardEl = document.getElementById('lbCard');
 
-  if (data.length && input && sug && rowsEl && metaEl && cardEl) {
+  if (data.length && input && sug && rowsEl && metaEl && titleEl && cardEl) {
     const circleSvg = `<svg class="lb-circle" viewBox="0 0 140 56" preserveAspectRatio="none"><path d="M 128 26 C 127 9, 98 3, 68 4 C 34 5, 8 12, 7 28 C 6 45, 38 54, 74 52 C 107 50, 133 44, 131 29 C 130 20, 121 13, 110 11" fill="none" stroke="#e8503a" stroke-width="3.4" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0"></path></svg>`;
 
     const renderCard = (entry: Entry) => {
       const rows = entry.rows; // dearest first
       const best = rows[rows.length - 1];
       const spread = rows[0][1] - best[1];
+      titleEl.textContent = entry.t;
       metaEl.textContent = `${rows.length} RETAILER${rows.length === 1 ? '' : 'S'} · AUD`;
       const normal = rows
         .slice(0, -1)
@@ -716,7 +671,7 @@ const normalRows = card.rows.slice(0, -1);
     };
 
     const select = (entry: Entry) => {
-      input.value = entry.t;
+      input.value = '';
       hide();
       input.blur();
       renderCard(entry);
@@ -746,9 +701,6 @@ const normalRows = card.rows.slice(0, -1);
       sug.hidden = false;
     };
 
-    input.addEventListener('focus', () => {
-      input.select();
-    });
     input.addEventListener('input', search);
     input.addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter' && matches.length) {

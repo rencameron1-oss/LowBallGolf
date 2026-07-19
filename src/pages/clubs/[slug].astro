@@ -1,0 +1,528 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import Container from '@bands/ui/components/ui/Container.astro';
+import PriceChart from '../../components/clubs/PriceChart.astro';
+import { fetchClubs, dollars, auDate } from '../../utils/priceData';
+import type { ClubData } from '../../utils/priceData';
+
+export async function getStaticPaths() {
+  const clubs = await fetchClubs();
+  return clubs.map((club) => ({ params: { slug: club.slug }, props: { club } }));
+}
+
+interface Props {
+  club: ClubData;
+}
+
+const { club } = Astro.props;
+const best = club.offers[0];
+const worst = club.offers[club.offers.length - 1];
+const spread = worst.price - best.price;
+const daysTracked = club.days.length;
+---
+
+<PageLayout
+  title={`${club.title} — Compare Prices`}
+  description={`${club.title} prices across ${club.offers.length} Australian golf retailers. Best price ${dollars(best.price)} at ${best.name}. Price history and spread tracked nightly.`}
+  ogImage={club.image ?? undefined}
+>
+  <div class="club-page">
+    <Container>
+      <nav class="club-crumb" aria-label="Breadcrumb">
+        <a href="/drivers">← ALL DRIVERS</a>
+      </nav>
+
+      <section class="club-top">
+        <div class="club-photo">
+          {club.image ? (
+            <img src={club.image} alt={club.title} loading="eager" />
+          ) : (
+            <svg viewBox="0 0 64 64" class="club-photo-fallback" aria-hidden="true">
+              <circle cx="32" cy="32" r="30" fill="#fbfcf8"></circle>
+              <path d="M 12 46 A 30 30 0 0 0 52 46 A 40 40 0 0 1 12 46 Z" fill="#dde4da" opacity=".7"></path>
+            </svg>
+          )}
+        </div>
+
+        <div class="club-intro">
+          <p class="club-kicker">{club.brand.toUpperCase()} · {club.offers.length} RETAILER{club.offers.length === 1 ? '' : 'S'} · AUD</p>
+          <h1 class="club-title">{club.title}</h1>
+          <p class="club-best">
+            <span class="club-best-price">{dollars(best.price)}</span>
+            <span class="club-best-at">at {best.name}</span>
+          </p>
+
+          <div class="club-ctas">
+            <a class="club-cta-buy" href={best.url} rel="nofollow sponsored" target="_blank">
+              GO TO CHEAPEST STORE →
+            </a>
+            <form
+              class="club-alert"
+              name="price-alert"
+              method="POST"
+              data-netlify="true"
+              data-netlify-honeypot="website"
+              data-alert-form
+            >
+              <input type="hidden" name="form-name" value="price-alert" />
+              <input type="hidden" name="club" value={club.title} />
+              <label class="club-alert-honeypot" aria-hidden="true">
+                Website
+                <input type="text" name="website" tabindex="-1" autocomplete="off" />
+              </label>
+              <input
+                type="email"
+                name="email"
+                required
+                placeholder="EMAIL FOR PRICE ALERTS"
+                aria-label={`Email address for ${club.title} price alerts`}
+              />
+              <button type="submit">⚡ ALERT ME</button>
+              <p class="club-alert-status" data-alert-status role="status" aria-live="polite"></p>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section class="club-chart">
+        <PriceChart days={club.days} storeNames={club.storeNames} trackedSince={club.trackedSince} />
+      </section>
+
+      <section class="club-stores">
+        <h2>WHERE TO BUY</h2>
+        <div class="club-table-wrap">
+          <table>
+            <thead>
+              <tr><th>Store</th><th class="num">Price</th><th class="num">RRP</th><th>Stock</th><th></th></tr>
+            </thead>
+            <tbody>
+              {club.offers.map((offer, i) => (
+                <tr class={i === 0 ? 'is-best' : ''}>
+                  <td class="store">{offer.name.toUpperCase()}</td>
+                  <td class="num price">
+                    {i === 0 ? (
+                      <span class="circled">
+                        {dollars(offer.price)}
+                        <svg viewBox="0 0 140 56" preserveAspectRatio="none" aria-hidden="true">
+                          <path d="M 128 26 C 127 9, 98 3, 68 4 C 34 5, 8 12, 7 28 C 6 45, 38 54, 74 52 C 107 50, 133 44, 131 29 C 130 20, 121 13, 110 11" fill="none" stroke="#e8503a" stroke-width="3.4" stroke-linecap="round"></path>
+                        </svg>
+                      </span>
+                    ) : (
+                      dollars(offer.price)
+                    )}
+                  </td>
+                  <td class="num rrp">{offer.rrp ? dollars(offer.rrp) : '—'}</td>
+                  <td class="stock">{offer.inStock ? 'IN STOCK' : 'OUT OF STOCK'}</td>
+                  <td class="go"><a href={offer.url} rel="nofollow sponsored" target="_blank">VISIT →</a></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="club-stats">
+        <div><span class="stat-label">LOWEST SEEN</span><span class="stat-val">{dollars(club.minEver)}</span></div>
+        <div><span class="stat-label">HIGHEST SEEN</span><span class="stat-val">{dollars(club.maxEver)}</span></div>
+        <div><span class="stat-label">SPREAD TODAY</span><span class="stat-val spread">{spread > 0 ? dollars(spread) : '—'}</span></div>
+        <div><span class="stat-label">DAYS TRACKED</span><span class="stat-val">{daysTracked}</span></div>
+      </section>
+
+      <p class="club-disclaimer">
+        Prices are collected nightly from retailer websites (last full check: {auDate(club.days[club.days.length - 1].date)})
+        and can change at any time. Always confirm the price on the retailer's site before buying.
+      </p>
+    </Container>
+  </div>
+</PageLayout>
+
+<style>
+  .club-page {
+    background: radial-gradient(120% 90% at 50% 10%, #0d3527 0%, #092619 70%);
+    color: #f2f4ef;
+    padding: 34px 0 90px;
+  }
+
+  .club-crumb {
+    margin-bottom: 30px;
+  }
+
+  .club-crumb a {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: #c9d4c9;
+    text-decoration: none;
+  }
+
+  .club-crumb a:hover {
+    color: #f5c944;
+  }
+
+  .club-top {
+    display: grid;
+    grid-template-columns: minmax(220px, 340px) 1fr;
+    gap: 44px;
+    align-items: center;
+    margin-bottom: 44px;
+  }
+
+  @media (max-width: 760px) {
+    .club-top {
+      grid-template-columns: 1fr;
+      gap: 26px;
+    }
+  }
+
+  .club-photo {
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    background: #fbfcf8;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .club-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+  }
+
+  .club-photo-fallback {
+    width: 45%;
+    opacity: 0.5;
+  }
+
+  .club-kicker {
+    margin: 0 0 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    color: #c9d4c9;
+  }
+
+  .club-title {
+    margin: 0;
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900;
+    font-stretch: 72%;
+    font-size: clamp(34px, 5vw, 58px);
+    line-height: 0.98;
+    color: #f2f4ef;
+  }
+
+  .club-best {
+    margin: 18px 0 26px;
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .club-best-price {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: clamp(30px, 4vw, 44px);
+    color: #f5c944;
+  }
+
+  .club-best-at {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 0.06em;
+    color: #c9d4c9;
+  }
+
+  .club-ctas {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .club-cta-buy {
+    display: inline-flex;
+    align-items: center;
+    padding: 14px 24px;
+    background: #f5c944;
+    color: #0d3527;
+    text-decoration: none;
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900;
+    font-stretch: 80%;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+  }
+
+  .club-cta-buy:hover {
+    background: #ffd75e;
+    transform: translateY(-2px);
+  }
+
+  .club-alert {
+    position: relative;
+    display: flex;
+    gap: 0;
+    border: 1px solid rgba(245, 201, 68, 0.55);
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(7, 30, 20, 0.72);
+  }
+
+  .club-alert input[type='email'] {
+    width: 210px;
+    max-width: 52vw;
+    padding: 0 14px;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    color: #f2f4ef;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .club-alert input[type='email']::placeholder {
+    color: rgba(201, 212, 201, 0.6);
+  }
+
+  .club-alert button {
+    padding: 14px 16px;
+    background: transparent;
+    border: 0;
+    border-left: 1px solid rgba(245, 201, 68, 0.55);
+    color: #f5c944;
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800;
+    font-stretch: 80%;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .club-alert button:hover {
+    background: #f5c944;
+    color: #0d3527;
+  }
+
+  .club-alert-honeypot {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .club-alert-status {
+    position: absolute;
+    left: 0;
+    top: 100%;
+    margin: 6px 0 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  .club-alert-status[data-state='ok'] {
+    color: #7fd1ae;
+  }
+
+  .club-alert-status[data-state='error'] {
+    color: #e8503a;
+  }
+
+  .club-chart {
+    margin-bottom: 44px;
+  }
+
+  .club-stores h2 {
+    margin: 0 0 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.26em;
+    color: #c9d4c9;
+  }
+
+  .club-table-wrap {
+    overflow-x: auto;
+    border: 1px solid rgba(201, 212, 201, 0.28);
+    border-radius: 6px;
+    background: rgba(7, 30, 20, 0.45);
+  }
+
+  .club-stores table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  .club-stores th,
+  .club-stores td {
+    padding: 13px 18px;
+    text-align: left;
+    white-space: nowrap;
+    border-top: 1px dashed rgba(201, 212, 201, 0.25);
+  }
+
+  .club-stores thead th {
+    border-top: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(201, 212, 201, 0.7);
+  }
+
+  .club-stores .num {
+    text-align: right;
+  }
+
+  .club-stores .store {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: #c9d4c9;
+  }
+
+  .club-stores .price {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: 17px;
+  }
+
+  .club-stores .rrp {
+    font-family: 'IBM Plex Mono', monospace;
+    color: rgba(201, 212, 201, 0.7);
+  }
+
+  .club-stores .stock {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: #7fd1ae;
+  }
+
+  .club-stores tr.is-best {
+    background: #0f3d2d;
+  }
+
+  .club-stores tr.is-best .store {
+    color: #f2f4ef;
+  }
+
+  .club-stores tr.is-best .price {
+    color: #f5c944;
+  }
+
+  .club-stores .circled {
+    position: relative;
+    display: inline-block;
+  }
+
+  .club-stores .circled svg {
+    position: absolute;
+    inset: -12px -16px;
+    width: calc(100% + 32px);
+    height: calc(100% + 24px);
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .club-stores .go a {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: #f5c944;
+    text-decoration: none;
+  }
+
+  .club-stores .go a:hover {
+    text-decoration: underline;
+  }
+
+  .club-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    margin: 40px 0 26px;
+  }
+
+  .club-stats > div {
+    border: 1px solid rgba(201, 212, 201, 0.28);
+    border-radius: 6px;
+    padding: 16px 18px;
+    background: rgba(7, 30, 20, 0.45);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    color: rgba(201, 212, 201, 0.7);
+  }
+
+  .stat-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: 22px;
+    color: #f2f4ef;
+  }
+
+  .stat-val.spread {
+    color: #7fd1ae;
+  }
+
+  .club-disclaimer {
+    margin: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    line-height: 1.7;
+    color: rgba(201, 212, 201, 0.6);
+  }
+</style>
+
+<script>
+  // Price-alert signup posts to Netlify Forms without leaving the page.
+  const form = document.querySelector<HTMLFormElement>('[data-alert-form]');
+  const status = document.querySelector<HTMLParagraphElement>('[data-alert-status]');
+  if (form && status) {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const body = new URLSearchParams(new FormData(form) as unknown as Record<string, string>).toString();
+      status.dataset.state = '';
+      status.textContent = 'SAVING…';
+      try {
+        const res = await fetch('/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body,
+        });
+        if (!res.ok) throw new Error();
+        status.dataset.state = 'ok';
+        status.textContent = "YOU'RE ON THE LIST — WE'LL EMAIL YOU ON A DROP.";
+        form.reset();
+      } catch {
+        status.dataset.state = 'error';
+        status.textContent = 'COULD NOT SAVE — PLEASE TRY AGAIN.';
+      }
+    });
+  }
+</script>

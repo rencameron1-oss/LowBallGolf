@@ -115,7 +115,9 @@ const dollars = (n: number) =>
                   return (
                     <tr>
                       <td class="font-semibold">
-                        {p.brand} {p.model}
+                        <a class="club-link" href={`/clubs/${p.slug}`}>
+                          {p.brand} {p.model}
+                        </a>
                         {p.is_ladies && <span class="ladies-tag">Ladies</span>}
                       </td>
                       <td class="num best">{dollars(p.best_price)}</td>
@@ -186,6 +188,14 @@ const dollars = (n: number) =>
   }
 
   .price-table a {
+    text-decoration: underline;
+  }
+
+  .price-table a.club-link {
+    text-decoration: none;
+  }
+
+  .price-table a.club-link:hover {
     text-decoration: underline;
   }
 

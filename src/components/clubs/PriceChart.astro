@@ -1,0 +1,259 @@
+---
+// Best-price-over-time chart as inline SVG, with a toggle that overlays
+// one line per store. Designed to look intentional even with only a few
+// days of data ("tracking since …" note handles the early weeks).
+import type { DayPoint } from '../../utils/priceData';
+import { dollars, auDate } from '../../utils/priceData';
+
+interface Props {
+  days: DayPoint[];
+  storeNames: string[];
+  trackedSince: string;
+}
+
+const { days, storeNames, trackedSince } = Astro.props;
+
+const W = 640;
+const H = 230;
+const PAD = { top: 18, right: 16, bottom: 34, left: 62 };
+
+const plotted = days.filter((d) => d.best != null);
+const allVals: number[] = [];
+for (const d of days) {
+  if (d.best != null) allVals.push(d.best);
+  for (const v of Object.values(d.perStore)) if (v != null) allVals.push(v);
+}
+const yMin0 = Math.min(...allVals);
+const yMax0 = Math.max(...allVals);
+const span = Math.max(yMax0 - yMin0, 20);
+const yMin = yMin0 - span * 0.12;
+const yMax = yMax0 + span * 0.12;
+
+const x = (i: number) =>
+  days.length === 1
+    ? W / 2
+    : PAD.left + (i * (W - PAD.left - PAD.right)) / (days.length - 1);
+const y = (v: number) => PAD.top + (1 - (v - yMin) / (yMax - yMin)) * (H - PAD.top - PAD.bottom);
+
+const linePath = (get: (d: DayPoint) => number | null) => {
+  let path = '';
+  days.forEach((d, i) => {
+    const v = get(d);
+    if (v == null) return;
+    path += (path ? ' L ' : 'M ') + `${x(i).toFixed(1)} ${y(v).toFixed(1)}`;
+  });
+  return path;
+};
+
+const bestPath = linePath((d) => d.best);
+const storeColors = ['#7fd1ae', '#e8503a', '#8ab4f8', '#c9a2f5', '#f2f4ef', '#f5a623'];
+const storeLines = storeNames.map((name, i) => ({
+  name,
+  color: storeColors[i % storeColors.length],
+  path: linePath((d) => d.perStore[name] ?? null),
+}));
+
+const yTicks = [yMin0, (yMin0 + yMax0) / 2, yMax0];
+const showStoreToggle = storeNames.length > 1;
+---
+
+<div class="pc" data-chart>
+  <div class="pc-head">
+    <span class="pc-title">BEST PRICE — DAILY</span>
+    {showStoreToggle && (
+      <button class="pc-toggle" data-chart-toggle type="button" aria-pressed="false">
+        SHOW ALL STORES
+      </button>
+    )}
+  </div>
+
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Price history chart">
+    {yTicks.map((t) => (
+      <>
+        <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} class="pc-grid" />
+        <text x={PAD.left - 8} y={y(t) + 4} class="pc-ylabel">{'$' + Math.round(t).toLocaleString('en-AU')}</text>
+      </>
+    ))}
+
+    <text x={PAD.left} y={H - 10} class="pc-xlabel">{auDate(days[0].date)}</text>
+    <text x={W - PAD.right} y={H - 10} class="pc-xlabel" text-anchor="end">
+      {auDate(days[days.length - 1].date)}
+    </text>
+
+    {storeLines.map((s) => (
+      <path d={s.path} class="pc-store-line" stroke={s.color} data-store-line />
+    ))}
+    {storeLines.map((s) =>
+      days.map((d, i) =>
+        d.perStore[s.name] != null ? (
+          <circle cx={x(i)} cy={y(d.perStore[s.name]!)} r="3" fill={s.color} class="pc-store-line" data-store-line />
+        ) : null
+      )
+    )}
+
+    <path d={bestPath} class="pc-best-line" />
+    {days.map((d, i) =>
+      d.best != null ? <circle cx={x(i)} cy={y(d.best)} r="4" class="pc-best-dot" /> : null
+    )}
+  </svg>
+
+  {showStoreToggle && (
+    <div class="pc-legend" data-store-line>
+      {storeLines.map((s) => (
+        <span><i style={`background:${s.color}`}></i>{s.name.toUpperCase()}</span>
+      ))}
+    </div>
+  )}
+
+  <p class="pc-note">
+    Tracking since {auDate(trackedSince)} · lowest recorded {dollars(Math.min(...plotted.map((d) => d.best!)))}
+  </p>
+</div>
+
+<style>
+  .pc {
+    border: 1px solid rgba(201, 212, 201, 0.28);
+    border-radius: 6px;
+    padding: 18px;
+    background: rgba(7, 30, 20, 0.45);
+  }
+
+  .pc-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .pc-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    color: #c9d4c9;
+  }
+
+  .pc-toggle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    padding: 6px 10px;
+    background: transparent;
+    color: #c9d4c9;
+    border: 1px solid rgba(201, 212, 201, 0.4);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .pc-toggle:hover {
+    color: #f5c944;
+    border-color: #f5c944;
+  }
+
+  .pc-toggle[aria-pressed='true'] {
+    background: #f5c944;
+    color: #0d3527;
+    border-color: #f5c944;
+  }
+
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .pc-grid {
+    stroke: rgba(201, 212, 201, 0.14);
+    stroke-dasharray: 3 5;
+  }
+
+  .pc-ylabel,
+  .pc-xlabel {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    fill: #c9d4c9;
+  }
+
+  .pc-ylabel {
+    text-anchor: end;
+  }
+
+  .pc-best-line {
+    fill: none;
+    stroke: #f5c944;
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .pc-best-dot {
+    fill: #f5c944;
+    stroke: #092619;
+    stroke-width: 1.5;
+  }
+
+  .pc-store-line {
+    fill: none;
+    stroke-width: 1.6;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+  }
+
+  circle.pc-store-line {
+    fill: inherit;
+  }
+
+  .pc[data-show-stores] .pc-store-line {
+    opacity: 0.85;
+  }
+
+  .pc-legend {
+    display: none;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin-top: 12px;
+  }
+
+  .pc[data-show-stores] .pc-legend {
+    display: flex;
+  }
+
+  .pc-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: #c9d4c9;
+  }
+
+  .pc-legend i {
+    width: 14px;
+    height: 3px;
+    border-radius: 2px;
+  }
+
+  .pc-note {
+    margin: 12px 0 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: rgba(201, 212, 201, 0.75);
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-chart]').forEach((chart) => {
+    const btn = chart.querySelector<HTMLButtonElement>('[data-chart-toggle]');
+    btn?.addEventListener('click', () => {
+      const on = chart.toggleAttribute('data-show-stores');
+      btn.setAttribute('aria-pressed', String(on));
+      btn.textContent = on ? 'BEST PRICE ONLY' : 'SHOW ALL STORES';
+    });
+  });
+</script>

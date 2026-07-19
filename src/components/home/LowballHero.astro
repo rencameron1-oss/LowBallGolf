@@ -36,9 +36,11 @@ let card = fallbackCard;
 // the hero search answers instantly without hitting the network.
 interface IndexEntry {
   t: string; // display title, uppercase
+  s: string; // club page slug
   rows: [string, number][]; // [store, price], dearest first
 }
 let searchIndex: IndexEntry[] = [];
+let featuredSlug: string | null = null;
 
 const SUPABASE_URL = import.meta.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.SUPABASE_ANON_KEY;
@@ -53,8 +55,8 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       return res.json();
     };
 
-    const products: { product_id: number; brand: string; model: string; spread: number }[] =
-      await get('product_best_price?select=product_id,brand,model,spread&order=spread.desc');
+    const products: { product_id: number; brand: string; model: string; slug: string; spread: number }[] =
+      await get('product_best_price?select=product_id,brand,model,slug,spread&order=spread.desc');
     const listings: {
       product_id: number;
       retailers: { name: string };
@@ -79,7 +81,7 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       const perStore = byProduct.get(p.product_id);
       if (!perStore || perStore.size === 0) continue;
       const rows = [...perStore.entries()].sort((a, b) => b[1] - a[1]) as [string, number][];
-      searchIndex.push({ t: `${p.brand} ${p.model} DRIVER`.toUpperCase(), rows });
+      searchIndex.push({ t: `${p.brand} ${p.model} DRIVER`.toUpperCase(), s: p.slug, rows });
     }
 
     // Featured card: biggest spread among clubs at 3+ stores (products
@@ -88,6 +90,7 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     if (featured) {
       const r = featured.rows;
       const picks = [r[0], r[Math.floor(r.length / 2)], r[r.length - 1]];
+      featuredSlug = featured.s;
       card = {
         title: featured.t,
         meta: `${r.length} RETAILERS · AUD`,
@@ -190,6 +193,9 @@ const normalRows = card.rows.slice(0, -1);
         </span>
       </div>
     </div>
+    {featuredSlug && (
+      <a class="lb-card-more" href={`/clubs/${featuredSlug}`}>FULL PRICE HISTORY →</a>
+    )}
   </div>
 
   <p class="lb-tagline">Same club. Different price. <span class="lb-gold-text">Play the low ball.</span></p>
@@ -561,22 +567,20 @@ const normalRows = card.rows.slice(0, -1);
     transform: translateY(-2px);
   }
 
-  /* Compressed animation timeline when a search swaps the card */
-  .lb-card.lb-replay {
-    animation: om-cardin 0.3s ease-out backwards;
+  .lb-card-more {
+    display: block;
+    padding: 11px 18px;
+    border-top: 1px dashed rgba(201, 212, 201, 0.35);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: #c9d4c9;
+    text-decoration: none;
+    transition: color 0.15s ease;
   }
 
-  .lb-card.lb-replay .lb-row-best {
-    animation-delay: 0.55s;
-  }
-
-  .lb-card.lb-replay .lb-circle path {
-    animation-duration: 0.5s;
-    animation-delay: 0.65s;
-  }
-
-  .lb-card.lb-replay .lb-tag {
-    animation-delay: 0.95s;
+  .lb-card-more:hover {
+    color: #f5c944;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -594,6 +598,7 @@ const normalRows = card.rows.slice(0, -1);
 <script>
   interface Entry {
     t: string;
+    s: string;
     rows: [string, number][];
   }
 
@@ -630,51 +635,16 @@ const normalRows = card.rows.slice(0, -1);
   const data: Entry[] = JSON.parse(document.getElementById('lb-data')?.textContent || '[]');
   const input = document.getElementById('lbSearch') as HTMLInputElement | null;
   const sug = document.getElementById('lbSug');
-  const rowsEl = document.getElementById('lbRows');
-  const metaEl = document.getElementById('lbMeta');
-  const titleEl = document.getElementById('lbTitle');
-  const cardEl = document.getElementById('lbCard');
 
-  if (data.length && input && sug && rowsEl && metaEl && titleEl && cardEl) {
-    const circleSvg = `<svg class="lb-circle" viewBox="0 0 140 56" preserveAspectRatio="none"><path d="M 128 26 C 127 9, 98 3, 68 4 C 34 5, 8 12, 7 28 C 6 45, 38 54, 74 52 C 107 50, 133 44, 131 29 C 130 20, 121 13, 110 11" fill="none" stroke="#e8503a" stroke-width="3.4" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0"></path></svg>`;
-
-    const renderCard = (entry: Entry) => {
-      const rows = entry.rows; // dearest first
-      const best = rows[rows.length - 1];
-      const spread = rows[0][1] - best[1];
-      titleEl.textContent = entry.t;
-      metaEl.textContent = `${rows.length} RETAILER${rows.length === 1 ? '' : 'S'} · AUD`;
-      const normal = rows
-        .slice(0, -1)
-        .map(
-          ([store, price]) =>
-            `<div class="lb-row"><span class="lb-store">${esc(store)}</span><span class="lb-price" data-odo="${price}">${fmt(price)}</span></div>`
-        )
-        .join('');
-      const tag =
-        spread > 0
-          ? `<span class="lb-tag-pos"><span class="lb-tag">SPREAD: ${fmt(spread)}</span></span>`
-          : '';
-      rowsEl.innerHTML =
-        normal +
-        `<div class="lb-row lb-row-best"><span class="lb-store lb-store-best">${esc(best[0])}</span><span class="lb-best-wrap"><span class="lb-price lb-price-best" data-odo="${best[1]}">${fmt(best[1])}</span>${circleSvg}</span>${tag}</div>`;
-      // Restart the card animations on the compressed timeline.
-      cardEl.classList.remove('lb-replay');
-      void cardEl.offsetWidth;
-      cardEl.classList.add('lb-replay');
-      runOdometer(350);
-    };
-
+  if (data.length && input && sug) {
     const hide = () => {
       sug.hidden = true;
       sug.innerHTML = '';
     };
 
     const select = (entry: Entry) => {
-      input.value = '';
       hide();
-      input.blur();
-      renderCard(entry);
+      window.location.href = `/clubs/${entry.s}`;
     };
 
     let matches: Entry[] = [];

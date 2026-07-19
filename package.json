@@ -15,6 +15,7 @@
     "configure": "node scripts/configure-site.mjs",
     "doctor": "node scripts/doctor.mjs",
     "ingest": "node --env-file=.env scripts/ingest/ingest.mjs",
+    "dedupe": "node --env-file=.env scripts/ingest/dedupe.mjs",
     "dev": "cross-env TINA_PUBLIC_IS_LOCAL=true ASTRO_DEV_BACKGROUND=0 tinacms dev --datalayer-port 9010 --port 4010 -c \"astro dev --port 4330 --host 0.0.0.0\"",
     "dev:astro": "cross-env ASTRO_DEV_BACKGROUND=0 astro dev --port 4330 --host 0.0.0.0",
     "build:cms": "cross-env TINA_PUBLIC_IS_LOCAL=true tinacms build --local --skip-cloud-checks --datalayer-port 9110 --port 4110",

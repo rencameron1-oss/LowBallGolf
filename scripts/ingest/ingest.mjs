@@ -16,7 +16,21 @@
 // The service key BYPASSES row security — never put it in the website,
 // never commit it, only ever in an environment variable.
 
-import { extractProduct, productSlug, decodeEntities, isAccessory } from "./matcher.mjs";
+import { readFileSync } from "node:fs";
+import { extractProduct, productSlug, decodeEntities, isAccessory, fingerprint } from "./matcher.mjs";
+
+const ALIASES = JSON.parse(readFileSync(new URL("./aliases.json", import.meta.url), "utf8"));
+
+// Known products indexed by fingerprint and slug, so listings with the
+// same words in a different order reuse the existing product instead of
+// spawning a duplicate. Populated in main(), updated as products are made.
+const productByKey = new Map();
+const productBySlug = new Map();
+
+function registerProduct(pr) {
+  productByKey.set(fingerprint(pr.brand, pr.model, pr.category, pr.is_ladies), pr);
+  productBySlug.set(pr.slug, pr);
+}
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY  = process.env.SUPABASE_SERVICE_KEY;
@@ -251,10 +265,19 @@ async function ingestRetailer(retailer) {
       const category = byExtId.get(listing.retailer_product_id)?.category ?? "driver";
       const p = extractProduct(listing.title, "", category);
       if (!p || p.confidence < AUTO_MATCH_THRESHOLD) continue;
-      const [product] = await dbUpsert("products", [{
-        brand: p.brand, model: p.model, category,
-        is_ladies: p.isLadies, slug: productSlug(p, category),
-      }], "brand,model,category,is_ladies");
+
+      // Route by curated alias first, then order-insensitive fingerprint,
+      // and only create a brand-new product when neither knows this club.
+      const key = fingerprint(p.brand, p.model, category, p.isLadies);
+      let product = ALIASES.merges[key] ? productBySlug.get(ALIASES.merges[key]) : null;
+      if (!product) product = productByKey.get(key) ?? null;
+      if (!product) {
+        [product] = await dbUpsert("products", [{
+          brand: p.brand, model: p.model, category,
+          is_ladies: p.isLadies, slug: productSlug(p, category),
+        }], "brand,model,category,is_ladies");
+        registerProduct(product);
+      }
       await dbPatch(`listings?id=eq.${listing.id}&match_status=eq.unmatched`, {
         product_id: product.id, match_status: "auto", match_confidence: p.confidence,
       });
@@ -275,6 +298,9 @@ async function ingestRetailer(retailer) {
 }
 
 // ---------------- main ----------------
+
+const knownProducts = await dbGet("products?select=id,brand,model,category,is_ladies,slug");
+for (const pr of knownProducts) registerProduct(pr);
 
 const retailers = await dbGet("retailers?active=is.true&select=*&order=id");
 console.log(`Ingesting ${retailers.length} retailers...`);

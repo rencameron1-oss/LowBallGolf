@@ -61,6 +61,38 @@ const NOISE = new Set([
 // only there.
 const YEAR_TOKENS = new Set(["23", "24", "25", "26"]);
 
+// Store-to-store naming synonyms, applied to the stripped lowercase title
+// before tokenising so "Milled Grind 4" and "MG4" fingerprint identically.
+// Keep entries conservative: only true synonyms, never product-line
+// variants (Elyte vs Elyte X are different clubs).
+const PHRASE_SYNONYMS = [
+  [/\bmilled grind (\d)\b/g, "mg$1"],
+  [/\bsquare to square\b/g, "s2s"],
+  [/\bdouble bend\b/g, "db"],
+  [/\bsingle bend\b/g, "sgb"],
+  [/\btwo ball\b/g, "2 ball"],
+  [/\bone ball\b/g, "1 ball"],
+  [/\b1 2 ball\b/g, "half ball"], // "1/2 Ball" after punctuation strip
+  [/\bcounter ?balanced?\b/g, "cb"],
+];
+
+export function applySynonyms(t) {
+  for (const [re, sub] of PHRASE_SYNONYMS) t = t.replace(re, sub);
+  return t;
+}
+
+// Order-insensitive product identity: brand + category + gender + the SET
+// of model words. Two titles with the same words in different order are
+// the same club; different words are (assumed) different clubs.
+export function fingerprint(brand, model, category, isLadies) {
+  return [
+    String(brand).toLowerCase(),
+    category,
+    isLadies ? "l" : "m",
+    String(model).toLowerCase().split(/\s+/).filter(Boolean).sort().join(" "),
+  ].join("|");
+}
+
 export function decodeEntities(s) {
   return s
     .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
@@ -86,9 +118,11 @@ export function extractProduct(rawTitle, vendor = "", category = "driver") {
   const isLadies = /\b(ladies|women'?s|womens)\b/i.test(title);
 
   // strip punctuation AFTER the ladies test (apostrophes matter there)
-  const t = title.toLowerCase()
-    .replace(/'\d\d\b/g, " ")            // "'25" year suffixes
-    .replace(/[^a-z0-9. ]/g, " ");
+  const t = applySynonyms(
+    title.toLowerCase()
+      .replace(/'\d\d\b/g, " ")          // "'25" year suffixes
+      .replace(/[^a-z0-9. ]/g, " ")
+  );
 
   const tokens = t.split(/\s+/).filter(Boolean);
 

@@ -1,0 +1,5 @@
+{
+  "_comment": "Curated dedupe decisions. merges: fingerprint -> canonical product slug (future scrapes route these names to the right product). distinct: pairs of slugs confirmed to be DIFFERENT clubs (the dedupe report stops suggesting them). Managed by scripts/ingest/dedupe.mjs.",
+  "merges": {},
+  "distinct": []
+}

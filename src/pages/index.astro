@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import PageLayout from '../layouts/PageLayout.astro';
 import TinaVisualEditing from '../components/tina/TinaVisualEditing.astro';
 import LowballHero from '../components/home/LowballHero.astro';
+import BiggestSavings from '../components/home/BiggestSavings.astro';
 import siteConfig from '../config/site';
 
 const homeEntry = (await getCollection('home'))[0];
@@ -21,4 +22,5 @@ const homeHeroImage =
 >
   <TinaVisualEditing collection="home" relativePath="index.md" />
   <LowballHero />
+  <BiggestSavings />
 </PageLayout>

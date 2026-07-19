@@ -1,69 +1,34 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
-import HeroSection from '../components/hero/HeroSection.astro';
-import Container from '@bands/ui/components/ui/Container.astro';
+import { fetchClubs, dollars } from '../utils/priceData';
 
-// Price data is fetched from Supabase at build time, so the page is static
-// and only as fresh as the latest deploy. The nightly scrape + rebuild keeps
-// it current once scheduling is wired up.
-const SUPABASE_URL = import.meta.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.SUPABASE_ANON_KEY;
+// Card grid of every tracked driver with client-side filtering. Data is
+// fetched at build time; the page is static and refreshed by the nightly
+// scrape + rebuild.
+const clubs = await fetchClubs();
 
-interface BestPrice {
-  product_id: number;
-  brand: string;
-  model: string;
-  is_ladies: boolean;
-  slug: string;
-  best_price: number;
-  worst_price: number;
-  spread: number;
-  retailer_count: number;
-}
-
-interface ListingRow {
-  product_id: number;
-  url: string;
-  retailers: { name: string };
-  prices: { price: number } | null;
-}
-
-let products: BestPrice[] = [];
-const cheapestStore = new Map<number, { name: string; url: string }>();
-let dataError = false;
-
-if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-  try {
-    const get = async (path: string) => {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-        headers: { apikey: SUPABASE_ANON_KEY },
-      });
-      if (!res.ok) throw new Error(`${path} -> ${res.status}`);
-      return res.json();
+const cards = clubs
+  .map((c) => {
+    const best = c.offers[0];
+    const worst = c.offers[c.offers.length - 1];
+    return {
+      slug: c.slug,
+      brand: c.brand,
+      model: c.model,
+      image: c.image,
+      isLadies: c.isLadies,
+      hands: c.hands,
+      bestPrice: best.price,
+      bestStore: best.name,
+      saving: worst.price - best.price,
+      stores: c.offers.length,
     };
+  })
+  .sort((a, b) => b.saving - a.saving || a.bestPrice - b.bestPrice);
 
-    products = await get(
-      'product_best_price?select=*&order=spread.desc,brand.asc&limit=500'
-    );
-
-    const listings: ListingRow[] = await get(
-      'listings?select=product_id,url,retailers(name),prices(price)' +
-        '&match_status=in.(auto,confirmed)&active=is.true&in_stock=is.true&product_id=not.is.null'
-    );
-    for (const l of listings) {
-      if (!l.prices) continue;
-      const current = cheapestStore.get(l.product_id);
-      const best = products.find((p) => p.product_id === l.product_id)?.best_price;
-      if (best != null && Number(l.prices.price) === Number(best) && !current) {
-        cheapestStore.set(l.product_id, { name: l.retailers.name, url: l.url });
-      }
-    }
-  } catch {
-    dataError = true;
-  }
-} else {
-  dataError = true;
-}
+const brands = [...new Set(cards.map((c) => c.brand))]
+  .sort()
+  .map((b) => ({ name: b, count: cards.filter((c) => c.brand === b).length }));
 
 const updatedAt = new Date().toLocaleDateString('en-AU', {
   day: 'numeric',
@@ -71,140 +36,436 @@ const updatedAt = new Date().toLocaleDateString('en-AU', {
   year: 'numeric',
   timeZone: 'Australia/Melbourne',
 });
-
-const dollars = (n: number) =>
-  Number(n).toLocaleString('en-AU', { style: 'currency', currency: 'AUD' });
 ---
 
 <PageLayout
   title="Compare Driver Prices"
-  description="Compare golf driver prices across major Australian retailers and find the cheapest store for every model."
+  description="Compare golf driver prices across major Australian retailers. Filter by brand, gender and hand, and find the cheapest store for every model."
 >
-  <HeroSection
-    heading="Driver Prices"
-    subheading="The same driver can differ by hundreds of dollars between Australian golf stores. Compare before you buy."
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400..700&display=swap"
+    rel="stylesheet"
   />
 
-  <section class="py-16 md:py-24">
-    <Container>
-      {dataError ? (
-        <p class="text-brand-muted text-center py-8">
-          Price data is being updated right now — check back shortly.
+  <div class="dp">
+    <div class="dp-wrap">
+      <header class="dp-head">
+        <p class="dp-kicker">Updated nightly · last check {updatedAt}</p>
+        <h1 class="dp-title">Drivers</h1>
+        <p class="dp-sub">
+          Every driver we track across Australian golf retailers, biggest saving first.
         </p>
+      </header>
+
+      {cards.length === 0 ? (
+        <p class="dp-empty">Price data is being updated right now — check back shortly.</p>
       ) : (
-        <div class="space-y-6">
-          <p class="text-brand-muted text-sm">
-            {products.length} drivers tracked across Australian retailers.
-            Sorted by biggest saving. Prices last updated {updatedAt}.
-          </p>
-          <div class="overflow-x-auto">
-            <table class="price-table w-full text-left">
-              <thead>
-                <tr>
-                  <th>Driver</th>
-                  <th class="num">Best price</th>
-                  <th class="num">Highest price</th>
-                  <th class="num">You save</th>
-                  <th class="num">Stores</th>
-                  <th>Cheapest at</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((p) => {
-                  const store = cheapestStore.get(p.product_id);
-                  return (
-                    <tr>
-                      <td class="font-semibold">
-                        <a class="club-link" href={`/clubs/${p.slug}`}>
-                          {p.brand} {p.model}
-                        </a>
-                        {p.is_ladies && <span class="ladies-tag">Ladies</span>}
-                      </td>
-                      <td class="num best">{dollars(p.best_price)}</td>
-                      <td class="num text-brand-muted">
-                        {p.retailer_count > 1 ? dollars(p.worst_price) : '—'}
-                      </td>
-                      <td class="num save">
-                        {p.spread > 0 ? dollars(p.spread) : '—'}
-                      </td>
-                      <td class="num">{p.retailer_count}</td>
-                      <td>
-                        {store ? (
-                          <a href={store.url} rel="nofollow sponsored" target="_blank">
-                            {store.name}
-                          </a>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p class="text-brand-muted text-xs">
-            Prices are collected from retailer websites and can change at any
-            time. Always confirm the price on the retailer's site before buying.
-          </p>
+        <div class="dp-layout">
+          <aside class="dp-filters" aria-label="Filters">
+            <div class="dp-filter-head">
+              <span>Filters</span>
+              <button type="button" id="dpClear" hidden>Clear all</button>
+            </div>
+
+            <fieldset class="dp-group">
+              <legend>Brand</legend>
+              {brands.map((b) => (
+                <label class="dp-check">
+                  <input type="checkbox" name="brand" value={b.name} />
+                  <span>{b.name}</span>
+                  <em>{b.count}</em>
+                </label>
+              ))}
+            </fieldset>
+
+            <fieldset class="dp-group">
+              <legend>Gender</legend>
+              <label class="dp-check"><input type="radio" name="gender" value="all" checked /><span>All</span></label>
+              <label class="dp-check"><input type="radio" name="gender" value="mens" /><span>Men's</span></label>
+              <label class="dp-check"><input type="radio" name="gender" value="ladies" /><span>Ladies</span></label>
+            </fieldset>
+
+            <fieldset class="dp-group">
+              <legend>Hand</legend>
+              <label class="dp-check"><input type="radio" name="hand" value="all" checked /><span>All</span></label>
+              <label class="dp-check"><input type="radio" name="hand" value="right" /><span>Right hand</span></label>
+              <label class="dp-check"><input type="radio" name="hand" value="left" /><span>Left hand</span></label>
+            </fieldset>
+          </aside>
+
+          <main class="dp-main">
+            <p class="dp-count" id="dpCount">{cards.length} drivers</p>
+            <div class="dp-grid" id="dpGrid">
+              {cards.map((c) => (
+                <a
+                  class="dp-card"
+                  href={`/clubs/${c.slug}`}
+                  data-brand={c.brand}
+                  data-gender={c.isLadies ? 'ladies' : 'mens'}
+                  data-hands={c.hands.join(' ')}
+                >
+                  {c.saving > 0 && <span class="dp-save">Save {dollars(c.saving)}</span>}
+                  <span class="dp-img">
+                    {c.image ? (
+                      <img src={c.image} alt={`${c.brand} ${c.model}`} loading="lazy" />
+                    ) : (
+                      <svg viewBox="0 0 64 64" aria-hidden="true">
+                        <circle cx="32" cy="32" r="30" fill="#eef1ec"></circle>
+                        <path d="M 12 46 A 30 30 0 0 0 52 46 A 40 40 0 0 1 12 46 Z" fill="#dde4da" opacity=".7"></path>
+                      </svg>
+                    )}
+                  </span>
+                  <span class="dp-brand">{c.brand}</span>
+                  <span class="dp-name">{c.model}{c.isLadies ? ' — Ladies' : ''}</span>
+                  <span class="dp-price">
+                    <strong>{dollars(c.bestPrice)}</strong>
+                    <em>at {c.bestStore}{c.stores > 1 ? ` · ${c.stores} stores` : ''}</em>
+                  </span>
+                </a>
+              ))}
+            </div>
+            <p class="dp-none" id="dpNone" hidden>No drivers match those filters.</p>
+            <p class="dp-note">
+              Prices are collected nightly from retailer websites and can change at any time.
+              Always confirm the price on the retailer's site before buying.
+            </p>
+          </main>
         </div>
       )}
-    </Container>
-  </section>
+    </div>
+  </div>
 </PageLayout>
 
 <style>
-  .price-table {
-    border-collapse: collapse;
-    font-size: 0.95rem;
+  .dp {
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', system-ui, sans-serif;
+    background:
+      linear-gradient(rgba(6, 23, 15, 0.9), rgba(6, 23, 15, 0.94)),
+      url('/images/club-bg.jpg') center / cover no-repeat #071a11;
+    color: #f2f4ef;
+    font-family: var(--sans);
+    padding: 40px 0 90px;
   }
 
-  .price-table th,
-  .price-table td {
-    padding: 0.65rem 0.9rem;
-    border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
-    white-space: nowrap;
+  @media (min-width: 768px) {
+    .dp {
+      background-attachment: fixed;
+    }
   }
 
-  .price-table th {
+  .dp-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .dp-head {
+    margin-bottom: 34px;
+  }
+
+  .dp-kicker {
+    margin: 0 0 10px;
+    font-size: 11px;
     font-weight: 600;
-    font-size: 0.85rem;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
+    color: rgba(201, 212, 201, 0.85);
+  }
+
+  .dp-title {
+    margin: 0;
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-weight: 560;
+    font-size: clamp(38px, 5vw, 58px);
+    line-height: 1;
+    color: #f7f8f4;
+  }
+
+  .dp-sub {
+    margin: 12px 0 0;
+    font-size: 15px;
+    color: #c9d4c9;
+  }
+
+  .dp-empty,
+  .dp-none {
+    padding: 40px 0;
+    text-align: center;
+    color: #c9d4c9;
+  }
+
+  .dp-layout {
+    display: grid;
+    grid-template-columns: 230px minmax(0, 1fr);
+    gap: 30px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .dp-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ---------- filter rail ---------- */
+  .dp-filters {
+    position: sticky;
+    top: 96px;
+    border: 1px solid rgba(201, 212, 201, 0.24);
+    border-radius: 8px;
+    background: rgba(6, 23, 15, 0.72);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    padding: 18px 18px 8px;
+  }
+
+  @media (max-width: 900px) {
+    .dp-filters {
+      position: static;
+    }
+  }
+
+  .dp-filter-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(201, 212, 201, 0.85);
+  }
+
+  .dp-filter-head button {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
     letter-spacing: 0.04em;
-    opacity: 0.7;
+    text-transform: none;
+    color: #f5c944;
+    cursor: pointer;
   }
 
-  .price-table .num {
-    text-align: right;
+  .dp-group {
+    border: 0;
+    margin: 0 0 6px;
+    padding: 12px 0;
+    border-top: 1px solid rgba(201, 212, 201, 0.14);
   }
 
-  .price-table .best {
-    font-weight: 700;
+  .dp-group legend {
+    padding: 0 0 8px;
+    font-size: 12px;
+    font-weight: 650;
+    color: #f2f4ef;
   }
 
-  .price-table .save {
-    color: #15803d;
-    font-weight: 600;
+  .dp-check {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 5px 0;
+    font-size: 13px;
+    color: #c9d4c9;
+    cursor: pointer;
   }
 
-  .price-table a {
-    text-decoration: underline;
+  .dp-check:hover {
+    color: #f5c944;
   }
 
-  .price-table a.club-link {
+  .dp-check input {
+    accent-color: #f5c944;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+  }
+
+  .dp-check em {
+    margin-left: auto;
+    font-style: normal;
+    font-size: 11px;
+    color: rgba(201, 212, 201, 0.55);
+  }
+
+  /* ---------- cards ---------- */
+  .dp-count {
+    margin: 0 0 14px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: rgba(201, 212, 201, 0.8);
+  }
+
+  .dp-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  @media (max-width: 1080px) {
+    .dp-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .dp-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .dp-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 16px 16px 18px;
     text-decoration: none;
+    color: #17241d;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
 
-  .price-table a.club-link:hover {
-    text-decoration: underline;
+  .dp-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.35);
   }
 
-  .ladies-tag {
-    margin-left: 0.5rem;
-    font-size: 0.7rem;
+  .dp-card[hidden] {
+    display: none;
+  }
+
+  .dp-save {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 1;
+    padding: 5px 9px;
+    background: #f5c944;
+    color: #0d3527;
+    font-size: 11px;
+    font-weight: 650;
+    border-radius: 4px;
+    transform: rotate(-2deg);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+  }
+
+  .dp-img {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    margin-bottom: 12px;
+  }
+
+  .dp-img img,
+  .dp-img svg {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .dp-img svg {
+    width: 55%;
+  }
+
+  .dp-brand {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: #8a978d;
+  }
+
+  .dp-name {
+    margin-top: 3px;
+    font-size: 15px;
+    font-weight: 650;
+    line-height: 1.35;
+    color: #17241d;
+  }
+
+  .dp-price {
+    margin-top: 10px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .dp-price strong {
+    font-family: var(--serif);
+    font-optical-sizing: auto;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    opacity: 0.7;
+    font-size: 21px;
+    color: #0d3527;
+  }
+
+  .dp-price em {
+    font-style: normal;
+    font-size: 11.5px;
+    color: #8a978d;
+  }
+
+  .dp-note {
+    margin: 26px 0 0;
+    font-size: 12px;
+    line-height: 1.7;
+    color: rgba(201, 212, 201, 0.6);
   }
 </style>
+
+<script>
+  const grid = document.getElementById('dpGrid');
+  const countEl = document.getElementById('dpCount');
+  const noneEl = document.getElementById('dpNone');
+  const clearBtn = document.getElementById('dpClear');
+
+  if (grid && countEl && noneEl && clearBtn) {
+    const cards = Array.from(grid.querySelectorAll<HTMLElement>('.dp-card'));
+    const brandBoxes = Array.from(
+      document.querySelectorAll<HTMLInputElement>('input[name="brand"]')
+    );
+    const radios = (name: string) =>
+      document.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value ?? 'all';
+
+    const apply = () => {
+      const activeBrands = brandBoxes.filter((b) => b.checked).map((b) => b.value);
+      const gender = radios('gender');
+      const hand = radios('hand');
+
+      let shown = 0;
+      for (const card of cards) {
+        const okBrand = activeBrands.length === 0 || activeBrands.includes(card.dataset.brand || '');
+        const okGender = gender === 'all' || card.dataset.gender === gender;
+        const okHand = hand === 'all' || (card.dataset.hands || '').split(' ').includes(hand);
+        const ok = okBrand && okGender && okHand;
+        card.hidden = !ok;
+        if (ok) shown++;
+      }
+      countEl.textContent = `${shown} driver${shown === 1 ? '' : 's'}`;
+      noneEl.hidden = shown > 0;
+      clearBtn.hidden = activeBrands.length === 0 && gender === 'all' && hand === 'all';
+    };
+
+    document
+      .querySelectorAll<HTMLInputElement>('.dp-filters input')
+      .forEach((i) => i.addEventListener('change', apply));
+
+    clearBtn.addEventListener('click', () => {
+      brandBoxes.forEach((b) => (b.checked = false));
+      document
+        .querySelectorAll<HTMLInputElement>('input[value="all"]')
+        .forEach((r) => (r.checked = true));
+      apply();
+    });
+  }
+</script>

@@ -23,6 +23,8 @@ export interface ClubData {
   brand: string;
   model: string;
   image: string | null;
+  isLadies: boolean;
+  hands: ('right' | 'left')[]; // detected from listing titles; right assumed when unstated
   offers: StoreOffer[]; // cheapest first
   minEver: number;
   maxEver: number;
@@ -52,9 +54,9 @@ export async function fetchClubs(): Promise<ClubData[]> {
 
   try {
     const [products, listings, history] = await Promise.all([
-      get('products?select=id,brand,model,slug,category'),
+      get('products?select=id,brand,model,slug,category,is_ladies'),
       get(
-        'listings?select=id,product_id,url,image_url,in_stock,retailers(name),prices(price,rrp)' +
+        'listings?select=id,product_id,url,image_url,in_stock,title,retailers(name),prices(price,rrp)' +
           '&active=is.true&match_status=in.(auto,confirmed)&product_id=not.is.null'
       ),
       get('price_history?select=listing_id,price,changed_at&order=changed_at.asc&limit=100000'),
@@ -149,12 +151,24 @@ export async function fetchClubs(): Promise<ClubData[]> {
         maxEver = offers[offers.length - 1].price;
       }
 
+      // Handedness from listing titles; drivers default to right-handed
+      // when no title says otherwise.
+      const hands = new Set<'right' | 'left'>();
+      for (const l of pls) {
+        const t = String(l.title || '');
+        if (/\b(left[- ]?hand(ed)?|lh)\b/i.test(t)) hands.add('left');
+        if (/\b(right[- ]?hand(ed)?|rh)\b/i.test(t)) hands.add('right');
+      }
+      if (hands.size === 0) hands.add('right');
+
       clubs.push({
         slug: p.slug,
         title: `${p.brand} ${p.model} ${p.category === 'driver' ? 'DRIVER' : ''}`.trim().toUpperCase(),
         brand: p.brand,
         model: p.model,
         image: pls.find((l) => l.image_url)?.image_url ?? null,
+        isLadies: p.is_ladies === true,
+        hands: [...hands],
         offers,
         minEver,
         maxEver,

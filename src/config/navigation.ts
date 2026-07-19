@@ -8,11 +8,12 @@ export const mainNav: NavItem[] = [
   { label: 'Home', href: '/' },
   {
     label: 'Clubs',
-    href: '/drivers',
+    href: '/clubs',
     children: [
-      { label: 'Drivers', href: '/drivers' },
-      { label: 'Putters', href: '/putters' },
-      { label: 'Wedges', href: '/wedges' },
+      { label: 'All Clubs', href: '/clubs' },
+      { label: 'Drivers', href: '/clubs?type=driver' },
+      { label: 'Putters', href: '/clubs?type=putter' },
+      { label: 'Wedges', href: '/clubs?type=wedge' },
     ],
   },
   { label: 'Guides', href: '/guides' },

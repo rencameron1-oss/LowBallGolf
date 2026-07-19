@@ -15,7 +15,9 @@ interface Props {
 
 const { category, heading, noun, seoTitle, seoDescription } = Astro.props;
 
-const clubs = (await fetchClubs()).filter((c) => c.category === category);
+// category === 'all' shows every type together and enables the Type filter.
+const all = category === 'all';
+const clubs = (await fetchClubs()).filter((c) => all || c.category === category);
 
 const cards = clubs
   .map((c) => {
@@ -25,6 +27,7 @@ const cards = clubs
       slug: c.slug,
       brand: c.brand,
       model: c.model,
+      type: c.category,
       image: c.image,
       isLadies: c.isLadies,
       hands: c.hands,
@@ -39,6 +42,14 @@ const cards = clubs
 const brands = [...new Set(cards.map((c) => c.brand))]
   .sort()
   .map((b) => ({ name: b, count: cards.filter((c) => c.brand === b).length }));
+
+const TYPE_LABELS: Record<string, string> = { driver: 'Drivers', putter: 'Putters', wedge: 'Wedges' };
+const TYPE_SINGULAR: Record<string, string> = { driver: 'Driver', putter: 'Putter', wedge: 'Wedge' };
+const types = all
+  ? [...new Set(cards.map((c) => c.type))]
+      .sort()
+      .map((t) => ({ id: t, label: TYPE_LABELS[t] ?? t, count: cards.filter((c) => c.type === t).length }))
+  : [];
 
 const updatedAt = new Date().toLocaleDateString('en-AU', {
   day: 'numeric',
@@ -75,6 +86,19 @@ const updatedAt = new Date().toLocaleDateString('en-AU', {
               <span>Filters</span>
               <button type="button" id="dpClear" hidden>Clear all</button>
             </div>
+
+            {types.length > 0 && (
+              <fieldset class="dp-group">
+                <legend>Type</legend>
+                {types.map((t) => (
+                  <label class="dp-check">
+                    <input type="checkbox" name="type" value={t.id} />
+                    <span>{t.label}</span>
+                    <em>{t.count}</em>
+                  </label>
+                ))}
+              </fieldset>
+            )}
 
             <fieldset class="dp-group">
               <legend>Brand</legend>
@@ -121,6 +145,7 @@ const updatedAt = new Date().toLocaleDateString('en-AU', {
                   class="dp-card"
                   href={`/clubs/${c.slug}`}
                   data-brand={c.brand}
+                  data-type={c.type}
                   data-gender={c.isLadies ? 'ladies' : 'mens'}
                   data-hands={c.hands.join(' ')}
                   data-price={String(c.bestPrice)}
@@ -138,7 +163,7 @@ const updatedAt = new Date().toLocaleDateString('en-AU', {
                       </svg>
                     )}
                   </span>
-                  <span class="dp-brand">{c.brand}</span>
+                  <span class="dp-brand">{c.brand}{all ? ` · ${TYPE_SINGULAR[c.type] ?? ''}` : ''}</span>
                   <span class="dp-name">{c.model}{c.isLadies ? ' — Ladies' : ''}</span>
                   <span class="dp-price">
                     <strong>{dollars(c.bestPrice)}</strong>
@@ -497,30 +522,34 @@ const updatedAt = new Date().toLocaleDateString('en-AU', {
 
   if (grid && countEl && noneEl && clearBtn) {
     const cards = Array.from(grid.querySelectorAll<HTMLElement>('.dp-card'));
-    const brandBoxes = Array.from(
-      document.querySelectorAll<HTMLInputElement>('input[name="brand"]')
-    );
+    const boxes = (name: string) =>
+      Array.from(document.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`));
+    const brandBoxes = boxes('brand');
+    const typeBoxes = boxes('type');
     const radios = (name: string) =>
       document.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value ?? 'all';
 
     const apply = () => {
+      const activeTypes = typeBoxes.filter((b) => b.checked).map((b) => b.value);
       const activeBrands = brandBoxes.filter((b) => b.checked).map((b) => b.value);
       const gender = radios('gender');
       const hand = radios('hand');
 
       let shown = 0;
       for (const card of cards) {
+        const okType = activeTypes.length === 0 || activeTypes.includes(card.dataset.type || '');
         const okBrand = activeBrands.length === 0 || activeBrands.includes(card.dataset.brand || '');
         const okGender = gender === 'all' || card.dataset.gender === gender;
         const okHand = hand === 'all' || (card.dataset.hands || '').split(' ').includes(hand);
-        const ok = okBrand && okGender && okHand;
+        const ok = okType && okBrand && okGender && okHand;
         card.hidden = !ok;
         if (ok) shown++;
       }
       const noun = countEl.dataset.noun || 'clubs';
       countEl.textContent = `${shown} ${shown === 1 ? noun.replace(/s$/, '') : noun}`;
       noneEl.hidden = shown > 0;
-      clearBtn.hidden = activeBrands.length === 0 && gender === 'all' && hand === 'all';
+      clearBtn.hidden =
+        activeTypes.length === 0 && activeBrands.length === 0 && gender === 'all' && hand === 'all';
     };
 
     document
@@ -528,12 +557,28 @@ const updatedAt = new Date().toLocaleDateString('en-AU', {
       .forEach((i) => i.addEventListener('change', apply));
 
     clearBtn.addEventListener('click', () => {
-      brandBoxes.forEach((b) => (b.checked = false));
+      [...brandBoxes, ...typeBoxes].forEach((b) => (b.checked = false));
       document
         .querySelectorAll<HTMLInputElement>('input[value="all"]')
         .forEach((r) => (r.checked = true));
       apply();
     });
+
+    // Deterministic initial state: browsers restore stale checkbox/radio
+    // state on reload or back-navigation, which would silently filter the
+    // page. Reset everything, then honour a ?type= deep link from the nav.
+    [...brandBoxes, ...typeBoxes].forEach((b) => (b.checked = false));
+    document
+      .querySelectorAll<HTMLInputElement>(
+        'input[name="gender"][value="all"], input[name="hand"][value="all"]'
+      )
+      .forEach((r) => (r.checked = true));
+    const preType = new URLSearchParams(location.search).get('type');
+    if (preType) {
+      const box = typeBoxes.find((b) => b.value === preType);
+      if (box) box.checked = true;
+    }
+    apply();
 
     // Sorting reorders the card elements in place; filters are untouched.
     const sortSel = document.getElementById('dpSort') as HTMLSelectElement | null;

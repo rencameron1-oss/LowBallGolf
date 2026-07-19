@@ -56,7 +56,7 @@ const siteConfig: SiteConfig = {
   },
   booking: {
     ctaText: 'Compare Prices',
-    ctaUrl: '/drivers',
+    ctaUrl: '/clubs',
     emailSubject: "Enquiry from LowballGolf",
   },
   seo: {

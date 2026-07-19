@@ -37,6 +37,9 @@ export default defineConfig({
     '/admin': '/admin/index.html',
     '/contact-us': '/contact',
     '/writing': '/guides',
-    '/work': '/drivers'
+    '/work': '/clubs',
+    '/drivers': '/clubs',
+    '/putters': '/clubs',
+    '/wedges': '/clubs'
   },
 });

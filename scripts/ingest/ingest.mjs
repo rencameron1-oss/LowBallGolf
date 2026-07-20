@@ -41,7 +41,27 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
 
 const AUTO_MATCH_THRESHOLD = 0.75;
 const UA = "LowballGolf/1.0 (+https://lowballgolf.com.au)";
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// AU-egress proxy. Some stores geo-block non-Australian IPs (GitHub's
+// runners are in the US). Requests flagged `au` route through a Supabase
+// Edge Function pinned to Sydney, so the store sees an Australian IP.
+// Running locally (already in AU)? Set AU_PROXY_OFF=1 to fetch directly.
+const AU_PROXY = `${SUPABASE_URL}/functions/v1/au-fetch`;
+const AU_PROXY_OFF = process.env.AU_PROXY_OFF === "1";
+
+async function httpGet(url, { au = false, headers = {} } = {}) {
+  if (!au || AU_PROXY_OFF) return fetch(url, { headers });
+  return fetch(`${AU_PROXY}?url=${encodeURIComponent(url)}`, {
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      "x-region": "ap-southeast-2",
+    },
+  });
+}
 
 // ---------------- Supabase REST helpers ----------------
 
@@ -116,12 +136,12 @@ async function fetchShopify(base, collectionHandle) {
   return items;
 }
 
-async function fetchWoo(base, search) {
+async function fetchWoo(base, search, au = false) {
   const items = [];
   for (let page = 1; page <= 10; page++) {
-    const res = await fetch(
+    const res = await httpGet(
       `${base}/wp-json/wc/store/v1/products?search=${encodeURIComponent(search)}&per_page=100&page=${page}`,
-      { headers: { "User-Agent": UA } });
+      { au, headers: { "User-Agent": UA } });
     if (!res.ok) break;
     const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) break;
@@ -145,10 +165,65 @@ async function fetchWoo(base, search) {
   return items;
 }
 
+// GolfBox is BigCommerce with no products.json; product data lives in the
+// category-page HTML. Each card-title anchor carries the name and price
+// range in its aria-label, plus the product href; the product image is
+// the nearest CDN image before it.
+function parseGolfBox(html) {
+  const items = [];
+  const re =
+    /<a\s+aria-label="([^"]+?)"[\s"]*href="(https:\/\/www\.golfbox\.com\.au\/[^"]+?)"[^>]*data-event-type="product-click"[^>]*>\s*([^<]+?)\s*<\/a>/g;
+  const titleIdx = [];
+  let m;
+  while ((m = re.exec(html))) {
+    const aria = m[1];
+    const url = m[2];
+    const name = decodeEntities(m[3].trim());
+    const priceM = aria.match(/\$\s?([\d,]+\.\d{2})/); // first $ = min of range
+    if (!priceM) continue;
+    const price = parseFloat(priceM[1].replace(/,/g, ""));
+    if (!(price > 0)) continue;
+    const slug = (url.match(/\/([^/]+)\/?$/) || [])[1] || url;
+    titleIdx.push(m.index);
+    const windowStart =
+      titleIdx.length > 1 ? titleIdx[titleIdx.length - 2] : Math.max(0, m.index - 4000);
+    const imgs = [
+      ...html
+        .slice(windowStart, m.index)
+        .matchAll(/(?:data-src|src)="(https:\/\/cdn11\.bigcommerce\.com\/[^"]+?\.(?:jpg|jpeg|png)[^"]*)"/gi),
+    ];
+    items.push({
+      retailer_product_id: `gb-${slug}`,
+      title: name,
+      url,
+      image_url: imgs.length ? imgs[imgs.length - 1][1] : null,
+      price,
+      rrp: null,
+      in_stock: true,
+    });
+  }
+  return items;
+}
+
+async function fetchGolfBox(base, category, au = false) {
+  const byId = new Map();
+  for (let page = 1; page <= 10; page++) {
+    const res = await httpGet(`${base}/golf-clubs/${category}/?page=${page}`, {
+      au,
+      headers: { "User-Agent": BROWSER_UA },
+    });
+    if (!res.ok) break;
+    const items = parseGolfBox(await res.text());
+    if (items.length === 0) break;
+    for (const item of items) if (!byId.has(item.retailer_product_id)) byId.set(item.retailer_product_id, item);
+    await sleep(800);
+  }
+  return [...byId.values()];
+}
+
 // Which fetchers per retailer slug, per category. A category may pull
 // several collections (House of Golf splits shelf and custom stock).
-// GolfBox (Searchanise) and Golf Clearance Outlet (Magento scrape) are
-// deliberately not wired yet.
+// Golf Clearance Outlet (Magento scrape) is deliberately not wired yet.
 const shopify = (...handles) => (r) =>
   Promise.all(handles.map((h) => fetchShopify(r.website_url, h))).then((lists) => {
     const byId = new Map();
@@ -175,14 +250,21 @@ const SOURCES = {
     { category: "wedge",  fetch: shopify("wedges") },
   ],
   "the-golf-factory": [
-    { category: "driver", fetch: (r) => fetchWoo(r.website_url, "driver") },
-    { category: "putter", fetch: (r) => fetchWoo(r.website_url, "putter") },
-    { category: "wedge",  fetch: (r) => fetchWoo(r.website_url, "wedge") },
+    // Geo-blocks non-AU IPs — routed through the Sydney proxy.
+    { category: "driver", fetch: (r) => fetchWoo(r.website_url, "driver", true) },
+    { category: "putter", fetch: (r) => fetchWoo(r.website_url, "putter", true) },
+    { category: "wedge",  fetch: (r) => fetchWoo(r.website_url, "wedge", true) },
   ],
   "house-of-golf": [
     { category: "driver", fetch: shopify("custom-drivers") },
     { category: "putter", fetch: shopify("putters", "custom-putters") },
     { category: "wedge",  fetch: shopify("wedges", "custom-wedges") },
+  ],
+  "golfbox": [
+    // BigCommerce HTML scrape, via the Sydney proxy in case it geo-blocks.
+    { category: "driver", fetch: (r) => fetchGolfBox(r.website_url, "drivers", true) },
+    { category: "putter", fetch: (r) => fetchGolfBox(r.website_url, "putters", true) },
+    { category: "wedge",  fetch: (r) => fetchGolfBox(r.website_url, "wedges", true) },
   ],
 };
 
@@ -267,14 +349,18 @@ async function ingestRetailer(retailer) {
       if (!p || p.confidence < AUTO_MATCH_THRESHOLD) continue;
 
       // Route by curated alias first, then order-insensitive fingerprint,
-      // and only create a brand-new product when neither knows this club.
+      // then exact slug (the table's other unique key — guards against a
+      // slug collision that the fingerprint tier would miss). Only create
+      // a brand-new product when none of them knows this club.
       const key = fingerprint(p.brand, p.model, category, p.isLadies);
+      const slug = productSlug(p, category);
       let product = ALIASES.merges[key] ? productBySlug.get(ALIASES.merges[key]) : null;
       if (!product) product = productByKey.get(key) ?? null;
+      if (!product) product = productBySlug.get(slug) ?? null;
       if (!product) {
         [product] = await dbUpsert("products", [{
           brand: p.brand, model: p.model, category,
-          is_ladies: p.isLadies, slug: productSlug(p, category),
+          is_ladies: p.isLadies, slug,
         }], "brand,model,category,is_ladies");
         registerProduct(product);
       }

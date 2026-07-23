@@ -32,7 +32,12 @@
     "ping|driver|m|g440 max order": "ping-g440-max-driver",
     "ping|driver|m|g440 lst order": "ping-g440-lst-driver",
     "ping|driver|m|g440 order sft": "ping-g440-sft-driver",
-    "callaway|driver|m|elyte order": "callaway-elyte-driver"
+    "callaway|driver|m|elyte order": "callaway-elyte-driver",
+    "cobra|putter|m|3dp agera rs": "cobra-3dp-tour-agera-rs-putter",
+    "titleist|driver|m|gts2 premium shafts": "titleist-gts2-premium-driver",
+    "taylormade|driver|m|qi4d shadowfall": "taylormade-qi4d-driver",
+    "taylormade|driver|m|max qi4d shadowfall": "taylormade-qi4d-max-driver",
+    "taylormade|driver|m|ls qi4d shadowfall": "taylormade-qi4d-ls-driver"
   },
   "distinct": [
     [
@@ -562,6 +567,126 @@
     [
       "cobra-king-wedge",
       "cobra-king-x-wedge"
+    ],
+    [
+      "cleveland-hb-soft-2-8s-putter",
+      "cleveland-hb-soft-2-putter"
+    ],
+    [
+      "cleveland-hb-soft-2-10-5p-putter",
+      "cleveland-hb-soft-2-putter"
+    ],
+    [
+      "odyssey-s2s-tri-hot-putter",
+      "odyssey-s2s-tri-hot-rossie-putter"
+    ],
+    [
+      "odyssey-ai-one-cruiser-putter",
+      "odyssey-ai-one-milled-cruiser-putter"
+    ],
+    [
+      "odyssey-ai-one-cruiser-2-putter",
+      "odyssey-ai-one-cruiser-putter"
+    ],
+    [
+      "odyssey-s2s-tri-hot-putter",
+      "odyssey-s2s-tri-hot-seven-putter"
+    ],
+    [
+      "odyssey-ai-dual-s2s-putter",
+      "odyssey-s2s-ai-dual-seven-putter"
+    ],
+    [
+      "odyssey-s2s-tri-hot-midnight-putter",
+      "odyssey-s2s-tri-hot-putter"
+    ],
+    [
+      "taylormade-spider-tour-black-putter",
+      "taylormade-spider-tour-cb-black-putter"
+    ],
+    [
+      "cobra-3d-printed-limit3d-enzo-putter",
+      "cobra-limit3d-3d-printed-putter"
+    ],
+    [
+      "cobra-3d-printed-limit3d-pista-putter",
+      "cobra-limit3d-3d-printed-putter"
+    ],
+    [
+      "ping-pld-milled-as-oslo-putter",
+      "ping-pld-milled-as-putter"
+    ],
+    [
+      "cobra-3dp-tour-grandsport-putter",
+      "cobra-3dp-tour-putter"
+    ],
+    [
+      "scotty-cameron-phantom-5-oc-putter",
+      "scotty-cameron-phantom-5-putter"
+    ],
+    [
+      "titleist-gts-driver",
+      "titleist-gts-mini-driver"
+    ],
+    [
+      "cobra-mim-putter",
+      "cobra-mim-widesport-putter"
+    ],
+    [
+      "cobra-mim-putter",
+      "cobra-mim-stingray-putter"
+    ],
+    [
+      "cobra-mim-camino-putter",
+      "cobra-mim-putter"
+    ],
+    [
+      "cobra-mim-blazer-putter",
+      "cobra-mim-putter"
+    ],
+    [
+      "scotty-cameron-phantom-3-2-putter",
+      "scotty-cameron-phantom-putter"
+    ],
+    [
+      "cobra-3dp-tour-supernova-cb-putter",
+      "cobra-3dp-tour-supernova-putter"
+    ],
+    [
+      "taylormade-qi4d-ls-shadowfall-driver",
+      "taylormade-qi4d-shadowfall-driver"
+    ],
+    [
+      "taylormade-qi4d-max-shadowfall-driver",
+      "taylormade-qi4d-shadowfall-driver"
+    ],
+    [
+      "bettinardi-antidote-sb2-long-putter",
+      "bettinardi-antidote-sb2-putter"
+    ],
+    [
+      "cobra-3dp-tour-cb-putter",
+      "cobra-3dp-tour-supernova-cb-putter"
+    ],
+    [
+      "cobra-king-satin-wedge",
+      "cobra-king-wedge"
+    ],
+    [
+      "mizuno-m-craft-nagoya-b-putter",
+      "mizuno-m-craft-nagoya-putter"
+    ],
+    [
+      "mizuno-m-craft-osaka-p-putter",
+      "mizuno-m-craft-osaka-putter"
+    ],
+    [
+      "mizuno-m-craft-kyoto-p-putter",
+      "mizuno-m-craft-kyoto-putter"
+    ],
+    [
+      "mizuno-m-craft-tokyo-b-putter",
+      "mizuno-m-craft-tokyo-putter"
     ]
   ]
 }

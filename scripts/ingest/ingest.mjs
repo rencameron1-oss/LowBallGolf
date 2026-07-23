@@ -221,9 +221,55 @@ async function fetchGolfBox(base, category, au = false) {
   return [...byId.values()];
 }
 
+// Golf Clearance Outlet is Magento 2 (Luma). Category-page HTML lists the
+// products as <li> cards; each carries a numeric product id, a
+// product-item-link (name + href), a product image, and a price-box with
+// finalPrice (what you pay) plus an optional oldPrice (the RRP).
+function parseGCO(html) {
+  const items = [];
+  const blocks = html.split('data-container="product-grid"');
+  for (let i = 1; i < blocks.length; i++) {
+    const b = blocks[i];
+    const idM = b.match(/data-product-id="(\d+)"/);
+    const linkM = b.match(/<a\s+class="product-item-link"\s+href="([^"]+)"[^>]*>\s*([^<]+?)\s*<\/a>/);
+    const finalM = b.match(/data-price-amount="([\d.]+)"\s+data-price-type="finalPrice"/);
+    if (!idM || !linkM || !finalM) continue;
+    const price = parseFloat(finalM[1]);
+    if (!(price > 0)) continue;
+    const oldM = b.match(/data-price-amount="([\d.]+)"\s+data-price-type="oldPrice"/);
+    const rrp = oldM ? parseFloat(oldM[1]) : null;
+    const imgM = b.match(/class="product-image-photo"[^>]*?\bsrc="([^"]+)"/);
+    items.push({
+      retailer_product_id: `gco-${idM[1]}`,
+      title: decodeEntities(linkM[2].trim()),
+      url: linkM[1],
+      image_url: imgM ? imgM[1] : null,
+      price,
+      rrp: rrp && rrp > price ? rrp : null,
+      in_stock: true, // out-of-stock items are hidden from category pages
+    });
+  }
+  return items;
+}
+
+async function fetchGCO(base, category, au = false) {
+  const byId = new Map();
+  for (let page = 1; page <= 10; page++) {
+    const res = await httpGet(`${base}/golf-clubs/${category}.html${page > 1 ? `?p=${page}` : ""}`, {
+      au,
+      headers: { "User-Agent": BROWSER_UA },
+    });
+    if (!res.ok) break;
+    const items = parseGCO(await res.text());
+    if (items.length === 0) break;
+    for (const item of items) if (!byId.has(item.retailer_product_id)) byId.set(item.retailer_product_id, item);
+    await sleep(800);
+  }
+  return [...byId.values()];
+}
+
 // Which fetchers per retailer slug, per category. A category may pull
 // several collections (House of Golf splits shelf and custom stock).
-// Golf Clearance Outlet (Magento scrape) is deliberately not wired yet.
 const shopify = (...handles) => (r) =>
   Promise.all(handles.map((h) => fetchShopify(r.website_url, h))).then((lists) => {
     const byId = new Map();
@@ -265,6 +311,12 @@ const SOURCES = {
     { category: "driver", fetch: (r) => fetchGolfBox(r.website_url, "drivers", true) },
     { category: "putter", fetch: (r) => fetchGolfBox(r.website_url, "putters", true) },
     { category: "wedge",  fetch: (r) => fetchGolfBox(r.website_url, "wedges", true) },
+  ],
+  "golf-clearance-outlet": [
+    // Magento (Luma) HTML scrape; serves non-AU IPs, so fetched directly.
+    { category: "driver", fetch: (r) => fetchGCO(r.website_url, "drivers") },
+    { category: "putter", fetch: (r) => fetchGCO(r.website_url, "putters") },
+    { category: "wedge",  fetch: (r) => fetchGCO(r.website_url, "wedges") },
   ],
 };
 
@@ -388,7 +440,11 @@ async function ingestRetailer(retailer) {
 const knownProducts = await dbGet("products?select=id,brand,model,category,is_ladies,slug");
 for (const pr of knownProducts) registerProduct(pr);
 
-const retailers = await dbGet("retailers?active=is.true&select=*&order=id");
+// ONLY_RETAILER (id or slug) restricts the run to one store — handy for
+// testing a newly wired scraper. Unset, it ingests every active retailer.
+const only = process.env.ONLY_RETAILER;
+const retailers = (await dbGet("retailers?active=is.true&select=*&order=id"))
+  .filter((r) => !only || String(r.id) === only || r.slug === only);
 console.log(`Ingesting ${retailers.length} retailers...`);
 for (const r of retailers) await ingestRetailer(r);
 console.log("Done.");
